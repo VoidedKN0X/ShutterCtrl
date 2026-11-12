@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ShutterCtrl has no HTTP client traffic: PTP/IP and the UPnP description read are plain sockets to private
+     addresses, checked in code (net/LocalAddress.kt). Cleartext HTTP through Android's HTTP stacks is off,
+     and only the system's certificate store is trusted. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

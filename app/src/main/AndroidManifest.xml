@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Local network only: PTP/IP to the camera (TCP 15740) and SSDP discovery. The app refuses any address
+         that isn't private or link-local, so nothing reaches the internet. CI checks the APK has exactly these. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Finds the phone's Wi-Fi network, so camera sockets are bound to the camera's own access point
+         (which has no internet) instead of mobile data. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- SSDP discovery answers arrive over multicast on Wi-Fi; held only while you tap Search. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- The intervalometer keeps shooting with the screen off (foreground service, connected device). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- The "Intervalometer running" notification with Stop. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Fingerprint unlock for the app lock. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Hides other apps' floating windows over the lock, PIN and confirmation screens only.
+         Install-time permission, no prompt. -->
+    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+
+    <uses-feature android:name="android.hardware.wifi" android:required="true" />
+
+    <!-- "Open in LumenCtrl": only that one app needs to be visible. -->
+    <queries>
+        <package android:name="com.vknxworks.lumenctrl" />
+    </queries>
+
+    <!-- intentMatchingFlags (Android 16+): other apps can only start ShutterCtrl with an intent that matches
+         its filters (the launcher). -->
+    <application
+        android:name=".ShutterCtrlApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:enableOnBackInvokedCallback="true"
+        android:intentMatchingFlags="enforceIntentFilter"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ShutterCtrl">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".camera.IntervalService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- No downloadable emoji font: don't let androidx.emoji2 look one up from a font provider
+             at start-up. Emoji are drawn with the phone's own emoji font instead. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+    </application>
+</manifest>

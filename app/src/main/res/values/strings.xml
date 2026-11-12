@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Shooting, connection and privacy</string>
+    <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening ShutterCtrl. An intervalometer series that\'s running keeps going.</string>
+    <string name="app_lock_footer">ShutterCtrl talks only to your camera on the local network: no cloud, no account, no analytics and no location access. Photos you download go straight to your library on this phone.</string>
+    <string name="lock_prompt_subtitle">Your camera</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered. ShutterCtrl will disconnect, reset its settings (your camera will ask to pair this phone again) and turn the app lock off. Photos you downloaded are in your library and aren\'t touched.</string>
+
+    <!-- Tabs -->
+    <string name="tab_camera">Camera</string>
+    <string name="tab_card">Card</string>
+
+    <!-- Connect -->
+    <string name="status_not_connected">Not connected</string>
+    <string name="status_connecting">Connecting</string>
+    <string name="status_connected">Connected</string>
+    <string name="wifi_none">No Wi-Fi</string>
+    <string name="wifi_camera">Wi-Fi without internet</string>
+    <string name="wifi_home">Wi-Fi</string>
+    <string name="connect_title">Connect your Canon camera</string>
+    <string name="connect_body">Over the camera\'s own Wi-Fi or your home Wi-Fi. Nothing goes to Canon or the internet.</string>
+    <string name="connecting_hint">If the camera asks, accept ShutterCtrl on the camera\'s screen.</string>
+    <string name="fail_unreachable">No camera answered at %1$s. Check that the camera\'s Wi-Fi remote connection is waiting and that this phone is on the same Wi-Fi.</string>
+    <string name="fail_refused">The camera refused the connection. Start the connection on the camera again and accept this phone.</string>
+    <string name="fail_lost">The connection to the camera was lost.</string>
+    <string name="fail_not_canon">That device isn\'t a Canon camera.</string>
+    <string name="fail_not_local">ShutterCtrl only connects to addresses on your local network (for example 192.168.x.x).</string>
+    <string name="group_find">Find the camera</string>
+    <string name="find_footer">Searching sends one discovery message on this Wi-Fi only.</string>
+    <string name="search_network">Search this Wi-Fi</string>
+    <string name="searching">Searching…</string>
+    <string name="search_network_sub">Finds Canon cameras that announce themselves on the network</string>
+    <string name="search_none">No camera found</string>
+    <string name="search_none_sub">Many cameras don\'t announce themselves. Enter the address shown on the camera instead.</string>
+    <string name="use_gateway">Use this Wi-Fi\'s access point</string>
+    <string name="use_gateway_sub">On the camera\'s own Wi-Fi, the camera is usually %1$s</string>
+    <string name="camera_address">Camera\'s IP address</string>
+    <string name="connect">Connect</string>
+    <string name="address_note">The camera shows its IP address in its Wi-Fi settings. Only local addresses are accepted.</string>
+    <string name="group_howto">How to connect</string>
+    <string name="howto_1_title">1. Turn on the camera\'s Wi-Fi</string>
+    <string name="howto_1">In the camera\'s wireless menu, start a Wi-Fi connection for remote control from a computer (EOS Utility) or a smartphone. Menus differ by model.</string>
+    <string name="howto_2_title">2. Put this phone on the same Wi-Fi</string>
+    <string name="howto_2">Join the camera\'s own network in Android\'s Wi-Fi settings, or let the camera join your home Wi-Fi. If Android says the network has no internet, choose to stay connected.</string>
+    <string name="howto_3_title">3. Connect here</string>
+    <string name="howto_3">Search, use the access point address, or type the camera\'s IP address. The first time, accept ShutterCtrl on the camera.</string>
+
+    <!-- Connected -->
+    <string name="battery_pct">Battery %1$d %%</string>
+    <string name="connected_sub">%1$s · firmware %2$s</string>
+    <string name="ctl_av">Av</string>
+    <string name="ctl_tv">Tv</string>
+    <string name="ctl_iso">ISO</string>
+    <string name="ctl_ev">Exp</string>
+    <string name="ctl_no_choices">The camera allows no change here in its current mode</string>
+    <string name="ctl_set_failed">The camera didn\'t accept that setting</string>
+    <string name="focus">Focus</string>
+    <string name="focus_release">Release</string>
+    <string name="shoot">Shoot</string>
+    <string name="shooting">Shooting…</string>
+    <string name="shoot_in">Cancel (%1$d)</string>
+    <string name="shoot_failed">The camera didn\'t take the picture. Check focus and the card.</string>
+    <string name="self_timer">Self-timer</string>
+    <string name="timer_off">Off</string>
+    <string name="live_view">Live view</string>
+    <string name="live_view_sub">See what the camera sees and change exposure</string>
+    <string name="live_view_unsupported">This camera doesn\'t offer live view over Wi-Fi</string>
+    <string name="live_view_waiting">Waiting for the camera…</string>
+    <string name="live_view_note">Live view uses the camera\'s battery faster. It stops when you leave this screen.</string>
+    <string name="group_camera">Camera</string>
+    <string name="firmware">Firmware update</string>
+    <string name="firmware_sub">Send a firmware file you downloaded from Canon</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="disconnect_sub">Ends the remote session; the camera stays on</string>
+
+    <!-- Intervalometer -->
+    <string name="group_interval">Intervalometer</string>
+    <string name="interval_footer">Keeps shooting with the screen off. A notification shows while a series runs, with Stop.</string>
+    <string name="interval_shots">Shots</string>
+    <string name="interval_every">Every</string>
+    <string name="interval_limits">1 to 9999 shots, every 2 to 3600 seconds</string>
+    <string name="interval_start">Start series</string>
+    <string name="interval_progress">%1$d of %2$d shots</string>
+    <string name="interval_next">Next shot in %1$d s</string>
+    <string name="interval_failed">%1$d shots failed</string>
+    <string name="stop">Stop</string>
+    <string name="ch_interval">Intervalometer</string>
+    <string name="ch_interval_desc">Shows while an intervalometer series is running, with Stop</string>
+    <string name="notif_interval">Intervalometer running</string>
+    <string name="notif_interval_progress">%1$d of %2$d shots, every %3$d s</string>
+
+    <!-- Card -->
+    <string name="refresh">Refresh</string>
+    <string name="retry">Try again</string>
+    <string name="card_not_connected">No camera connected</string>
+    <string name="card_not_connected_body">Connect your camera on the Camera tab to see its card here.</string>
+    <string name="card_error">Couldn\'t read the card</string>
+    <string name="card_empty">The card is empty</string>
+    <string name="card_empty_body">Photos on the camera\'s card show up here.</string>
+    <string name="download">Download to this phone</string>
+    <string name="downloading">Downloading… %1$d %%</string>
+    <string name="downloaded">Saved to Pictures/ShutterCtrl</string>
+    <string name="downloaded_dl">Saved to Download/ShutterCtrl (this phone\'s media library doesn\'t know this RAW type)</string>
+    <string name="download_failed">Download failed: %1$s</string>
+    <string name="download_open_lumen">Download and open in LumenCtrl</string>
+    <string name="download_open_lumen_sub">Edit the JPEG or RAW file right away</string>
+    <string name="saved_to">Saved to Pictures/ShutterCtrl (RAW types this phone doesn\'t know go to Download/ShutterCtrl).</string>
+    <string name="open_lumen">Open in LumenCtrl</string>
+    <string name="lumen_missing">Install LumenCtrl to edit downloads straight from here.</string>
+    <string name="lumen_failed">Couldn\'t open LumenCtrl</string>
+
+    <!-- Firmware -->
+    <string name="fw_intro">Download the firmware file (.FIR) for your camera from Canon\'s website yourself, then pick it here. ShutterCtrl never goes online for this. The camera checks the file again and installs it only when you start the update on the camera.</string>
+    <string name="fw_not_connected">No camera connected</string>
+    <string name="fw_not_connected_body">Connect your camera first.</string>
+    <string name="fw_group_camera">Camera</string>
+    <string name="fw_camera">Model</string>
+    <string name="fw_current_version">Current firmware</string>
+    <string name="fw_battery">Battery</string>
+    <string name="unknown">Unknown</string>
+    <string name="fw_route">How the file goes to the camera</string>
+    <string name="fw_route_canon">Canon\'s own firmware transfer, as Camera Connect does it</string>
+    <string name="fw_route_card">Copied to the root of the card; then run Firmware update in the camera\'s menu</string>
+    <string name="fw_route_none">This camera accepts neither way over Wi-Fi. Copy the file to the card with a card reader.</string>
+    <string name="fw_group_file">Firmware file</string>
+    <string name="fw_pick">Pick the .FIR file</string>
+    <string name="fw_pick_sub">From your downloads or any folder</string>
+    <string name="fw_file_sub">%1$s · model id %2$s</string>
+    <string name="fw_model_ok">The file\'s model id matches this camera.</string>
+    <string name="fw_model_ack">This camera didn\'t report its model id, so ShutterCtrl can\'t compare it. I checked that this file is for my %1$s.</string>
+    <string name="fw_block_not_fir">This isn\'t a .FIR firmware file.</string>
+    <string name="fw_block_size">The file size doesn\'t look like Canon firmware.</string>
+    <string name="fw_block_name">The file name must be plain letters and digits, shorter than 32 characters (keep Canon\'s original name).</string>
+    <string name="fw_block_battery_unknown">The camera didn\'t report its battery level. Charge it fully and reconnect.</string>
+    <string name="fw_block_battery_low">The battery must be full. Charge it and reconnect.</string>
+    <string name="fw_block_model">This file is for another camera model.</string>
+    <string name="fw_block_route">This camera can\'t receive files over Wi-Fi.</string>
+    <string name="fw_send">Send to camera</string>
+    <string name="fw_copy">Copy to card</string>
+    <string name="fw_confirm_title">Send the firmware?</string>
+    <string name="fw_confirm_canon">%1$s is sent to the camera. Keep the camera on and close by, and don\'t leave ShutterCtrl until it\'s done. Then follow the instructions on the camera\'s screen to start the update.</string>
+    <string name="fw_confirm_card">%1$s is copied to the root of the camera\'s card. Keep the camera on until it\'s done. Then run Firmware update from the camera\'s menu.</string>
+    <string name="fw_running_warning">Don\'t turn off the camera, open its card slot or battery door, or leave Wi-Fi range.</string>
+    <string name="fw_sending">Sending firmware to the camera</string>
+    <string name="fw_copying">Copying firmware to the card</string>
+    <string name="fw_done_title">Firmware is on the camera</string>
+    <string name="fw_done_canon">%1$s was sent. Follow the instructions on the camera\'s screen to start the firmware update. Don\'t turn the camera off while it updates.</string>
+    <string name="fw_done_card">%1$s is on the card. On the camera, open the menu, choose Firmware (Firmware update) and follow the steps. The camera checks the file before it installs it.</string>
+    <string name="fw_failed">The firmware transfer stopped: %1$s. Nothing was installed. Reconnect and try again.</string>
+
+    <!-- Settings -->
+    <string name="group_shooting">Shooting</string>
+    <string name="keep_screen_on">Keep screen on</string>
+    <string name="keep_screen_on_sub">During live view</string>
+    <string name="group_connection">Connection</string>
+    <string name="connection_footer">Your camera pairs with a random identity that ShutterCtrl made for this phone; it holds no name, account or serial number.</string>
+    <string name="reset_identity">Reset pairing identity</string>
+    <string name="reset_identity_sub">Your cameras will ask to pair this phone again</string>
+    <string name="reset_identity_title">Reset the pairing identity?</string>
+    <string name="reset_identity_body">ShutterCtrl disconnects and makes a new identity. Each camera will ask you to accept this phone again.</string>
+    <string name="reset_identity_confirm">Reset</string>
+    <string name="reset_identity_done">New identity made</string>
+</resources>
