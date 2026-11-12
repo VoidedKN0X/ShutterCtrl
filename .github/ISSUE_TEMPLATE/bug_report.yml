@@ -21,7 +21,7 @@ body:
       label: Steps to reproduce
       description: How can I make it happen too?
       placeholder: |
-        1. Connect to the camera over its own Wi-Fi (or home Wi-Fi)
+        1. Connect to the camera over USB, its own Wi-Fi or home Wi-Fi
         2. Tap ...
         3. See ...
     validations:

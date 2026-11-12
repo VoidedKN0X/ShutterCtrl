@@ -36,6 +36,7 @@ object Op {
 object Rc {
     const val OK = 0x2001
     const val DEVICE_BUSY = 0x2019
+    const val SESSION_ALREADY_OPEN = 0x201E
     /** Canon "not ready yet" (seen in the Canon app's GetViewFinderData loop). */
     const val CANON_NOT_READY = 0xA102
 
@@ -71,4 +72,10 @@ object Fmt {
     const val CANON_CR3 = 0xB108
 }
 
-class PtpException(message: String, val code: Int = 0) : Exception(message)
+open class PtpException(message: String, val code: Int = 0) : Exception(message)
+
+/** The USB cable was pulled (or the camera turned off) while connected over USB. */
+class UsbDetachedException : PtpException("The USB cable was disconnected")
+
+/** The camera's USB interface couldn't be opened (no permission, or another app holds it). */
+class UsbOpenException(message: String) : PtpException(message)

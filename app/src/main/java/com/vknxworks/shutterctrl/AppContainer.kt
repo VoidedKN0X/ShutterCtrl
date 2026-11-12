@@ -8,6 +8,7 @@ import com.vknxworks.shutterctrl.data.settings.AppSettings
 import com.vknxworks.shutterctrl.data.settings.SettingsRepository
 import com.vknxworks.shutterctrl.net.CameraNetwork
 import com.vknxworks.shutterctrl.ui.lock.AppLock
+import com.vknxworks.shutterctrl.usb.UsbCameras
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +25,11 @@ class AppContainer(val context: Context) {
     /** The phone's Wi-Fi, so camera sockets go to the camera even on its own access point. */
     val network = CameraNetwork(context).also { it.start() }
 
-    /** The one camera connection. */
-    val session = CameraSession(context, appScope, network)
+    /** Canon cameras on a USB cable (only listed; nothing is opened until you tap one). */
+    val usb = UsbCameras(context)
+
+    /** The one camera connection, over Wi-Fi or USB. */
+    val session = CameraSession(context, appScope, network, usb).also { usb.start() }
 
     /** The app lock's PIN and fingerprint key (the shared Ctrl series lock). */
     val vault = LockVault(context, "shutterctrl")

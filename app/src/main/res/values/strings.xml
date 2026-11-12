@@ -3,7 +3,7 @@
     <!-- Shell texts for this app -->
     <string name="settings_subtitle">Shooting, connection and privacy</string>
     <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening ShutterCtrl. An intervalometer series that\'s running keeps going.</string>
-    <string name="app_lock_footer">ShutterCtrl talks only to your camera on the local network: no cloud, no account, no analytics and no location access. Photos you download go straight to your library on this phone.</string>
+    <string name="app_lock_footer">ShutterCtrl talks only to your camera, on a USB cable or the local network: no cloud, no account, no analytics and no location access. Photos you download go straight to your library on this phone.</string>
     <string name="lock_prompt_subtitle">Your camera</string>
     <string name="lock_forgot_body">The PIN can\'t be recovered. ShutterCtrl will disconnect, reset its settings (your camera will ask to pair this phone again) and turn the app lock off. Photos you downloaded are in your library and aren\'t touched.</string>
 
@@ -19,14 +19,25 @@
     <string name="wifi_camera">Wi-Fi without internet</string>
     <string name="wifi_home">Wi-Fi</string>
     <string name="connect_title">Connect your Canon camera</string>
-    <string name="connect_body">Over the camera\'s own Wi-Fi or your home Wi-Fi. Nothing goes to Canon or the internet.</string>
+    <string name="connect_body">With a USB cable, or over the camera\'s own Wi-Fi or your home Wi-Fi. Nothing goes to Canon or the internet.</string>
+    <string name="connecting_hint_usb">If Android asks, allow ShutterCtrl to use the camera.</string>
     <string name="connecting_hint">If the camera asks, accept ShutterCtrl on the camera\'s screen.</string>
     <string name="fail_unreachable">No camera answered at %1$s. Check that the camera\'s Wi-Fi remote connection is waiting and that this phone is on the same Wi-Fi.</string>
     <string name="fail_refused">The camera refused the connection. Start the connection on the camera again and accept this phone.</string>
     <string name="fail_lost">The connection to the camera was lost.</string>
     <string name="fail_not_canon">That device isn\'t a Canon camera.</string>
     <string name="fail_not_local">ShutterCtrl only connects to addresses on your local network (for example 192.168.x.x).</string>
-    <string name="group_find">Find the camera</string>
+    <string name="fail_usb_detached">The USB cable was disconnected, so the session ended (a running intervalometer series was stopped). Plug the camera in again and tap it below to reconnect.</string>
+    <string name="fail_usb_denied">ShutterCtrl wasn\'t allowed to use the camera over USB. Tap the camera again and allow access.</string>
+    <string name="fail_usb_open">Couldn\'t open the camera over USB. Close other apps that use it (for example a Files or photo import app), unplug the cable, plug it in again and retry.</string>
+    <string name="group_usb">Connect over USB</string>
+    <string name="usb_footer">Use a USB cable from the camera to the phone (a USB-C cable, or an OTG adapter). On many Canon cameras the USB port doesn\'t work for remote control while the camera\'s Wi-Fi is on, so turn Wi-Fi off on the camera first. The first time, Android asks whether ShutterCtrl may use the camera.</string>
+    <string name="usb_none">No camera connected</string>
+    <string name="usb_none_sub">Plug in a Canon camera with a USB cable and turn it on. It shows up here.</string>
+    <string name="usb_label">USB</string>
+    <string name="usb_camera_default">Canon camera</string>
+    <string name="usb_camera_sub">USB cable · tap to connect</string>
+    <string name="group_find">Connect over Wi-Fi</string>
     <string name="find_footer">Searching sends one discovery message on this Wi-Fi only.</string>
     <string name="search_network">Search this Wi-Fi</string>
     <string name="searching">Searching…</string>
@@ -38,7 +49,7 @@
     <string name="camera_address">Camera\'s IP address</string>
     <string name="connect">Connect</string>
     <string name="address_note">The camera shows its IP address in its Wi-Fi settings. Only local addresses are accepted.</string>
-    <string name="group_howto">How to connect</string>
+    <string name="group_howto">How to connect over Wi-Fi</string>
     <string name="howto_1_title">1. Turn on the camera\'s Wi-Fi</string>
     <string name="howto_1">In the camera\'s wireless menu, start a Wi-Fi connection for remote control from a computer (EOS Utility) or a smartphone. Menus differ by model.</string>
     <string name="howto_2_title">2. Put this phone on the same Wi-Fi</string>
@@ -65,7 +76,7 @@
     <string name="timer_off">Off</string>
     <string name="live_view">Live view</string>
     <string name="live_view_sub">See what the camera sees and change exposure</string>
-    <string name="live_view_unsupported">This camera doesn\'t offer live view over Wi-Fi</string>
+    <string name="live_view_unsupported">This camera doesn\'t offer remote live view</string>
     <string name="live_view_waiting">Waiting for the camera…</string>
     <string name="live_view_note">Live view uses the camera\'s battery faster. It stops when you leave this screen.</string>
     <string name="group_camera">Camera</string>
@@ -122,7 +133,7 @@
     <string name="fw_route">How the file goes to the camera</string>
     <string name="fw_route_canon">Canon\'s own firmware transfer, as Camera Connect does it</string>
     <string name="fw_route_card">Copied to the root of the card; then run Firmware update in the camera\'s menu</string>
-    <string name="fw_route_none">This camera accepts neither way over Wi-Fi. Copy the file to the card with a card reader.</string>
+    <string name="fw_route_none">This camera accepts neither way from a phone. Copy the file to the card with a card reader.</string>
     <string name="fw_group_file">Firmware file</string>
     <string name="fw_pick">Pick the .FIR file</string>
     <string name="fw_pick_sub">From your downloads or any folder</string>
@@ -135,13 +146,13 @@
     <string name="fw_block_battery_unknown">The camera didn\'t report its battery level. Charge it fully and reconnect.</string>
     <string name="fw_block_battery_low">The battery must be full. Charge it and reconnect.</string>
     <string name="fw_block_model">This file is for another camera model.</string>
-    <string name="fw_block_route">This camera can\'t receive files over Wi-Fi.</string>
+    <string name="fw_block_route">This camera can\'t receive files from a phone.</string>
     <string name="fw_send">Send to camera</string>
     <string name="fw_copy">Copy to card</string>
     <string name="fw_confirm_title">Send the firmware?</string>
     <string name="fw_confirm_canon">%1$s is sent to the camera. Keep the camera on and close by, and don\'t leave ShutterCtrl until it\'s done. Then follow the instructions on the camera\'s screen to start the update.</string>
     <string name="fw_confirm_card">%1$s is copied to the root of the camera\'s card. Keep the camera on until it\'s done. Then run Firmware update from the camera\'s menu.</string>
-    <string name="fw_running_warning">Don\'t turn off the camera, open its card slot or battery door, or leave Wi-Fi range.</string>
+    <string name="fw_running_warning">Don\'t turn off the camera, open its card slot or battery door, unplug the USB cable or leave Wi-Fi range.</string>
     <string name="fw_sending">Sending firmware to the camera</string>
     <string name="fw_copying">Copying firmware to the card</string>
     <string name="fw_done_title">Firmware is on the camera</string>

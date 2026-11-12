@@ -4,6 +4,22 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.2.0 (2026-11-12)
+
+ShutterCtrl now also works over a USB cable. Everything you can do over Wi-Fi works the same way on the cable. USB hasn't been tested with a real camera yet; please report your camera model and what works.
+
+### New
+
+- **Connect over USB:** plug the camera into the phone with a USB cable (USB-C to USB-C, or the camera's cable with an OTG adapter) and tap it under **Connect over USB** on the Camera tab. The first time, Android asks whether ShutterCtrl may use the camera. When you plug in a Canon camera, Android can also offer to open ShutterCtrl.
+- **Everything works over the cable:** card browser and downloads to Pictures/ShutterCtrl, Focus and Shoot with the self-timer, live view with Av, Tv, ISO and exposure compensation, the intervalometer, and the firmware transfer with all its safety checks (full battery, model check, confirmation, blocking progress screen).
+- **Pulling the cable** ends the session right away and stops a running intervalometer series. The Camera tab says the cable was disconnected; plug it in again and tap the camera to reconnect.
+
+### Changed
+
+- The Camera tab's connect screen now has two sections: **Connect over USB** and **Connect over Wi-Fi**.
+- Messages that mentioned only Wi-Fi (live view not supported, firmware routes, the firmware warning) now cover both connections.
+- No new permissions. Using a camera over USB needs only Android's per-camera "allow" dialog.
+
 ## v0.1.0 (2026-11-12)
 
 The first release of ShutterCtrl: a private Wi-Fi remote for Canon cameras that replaces Canon Camera Connect, with no Canon account and no cloud. Not yet tested with a real camera; please report your camera model and what works.

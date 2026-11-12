@@ -1,5 +1,6 @@
 package com.vknxworks.shutterctrl
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -24,6 +25,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent { CtrlWindow(this) { AppRoot() } }
+    }
+
+    /**
+     * A camera was plugged in (USB_DEVICE_ATTACHED) or the app came back: look at UsbManager's list again.
+     * The intent is only a hint; its extras are never used and nothing connects by itself.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        container.usb.refresh()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        container.usb.refresh()
     }
 }
 

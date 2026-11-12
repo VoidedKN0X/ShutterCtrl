@@ -13,7 +13,13 @@ import com.vknxworks.shutterctrl.ptp.Op
 import com.vknxworks.shutterctrl.ptp.Prop
 import com.vknxworks.shutterctrl.ptp.PtpException
 import com.vknxworks.shutterctrl.ptp.PtpIpClient
+import com.vknxworks.shutterctrl.ptp.PtpResult
+import com.vknxworks.shutterctrl.ptp.PtpTransport
+import com.vknxworks.shutterctrl.ptp.PtpUsbClient
 import com.vknxworks.shutterctrl.ptp.Rc
+import com.vknxworks.shutterctrl.ptp.UsbDetachedException
+import com.vknxworks.shutterctrl.ptp.UsbOpenException
+import com.vknxworks.shutterctrl.usb.UsbCameras
 import com.vknxworks.shutterctrl.ptp.ViewFinder
 import com.vknxworks.shutterctrl.ptp.parseU32Array
 import kotlinx.coroutines.CoroutineScope
@@ -34,11 +40,12 @@ import java.net.InetAddress
 /** Connection state, shown on the Camera tab. */
 sealed interface Link {
     data object Idle : Link
-    data class Connecting(val host: String) : Link
-    data class Connected(val host: String, val name: String, val info: DeviceInfo) : Link
-    data class Failed(val host: String, val reason: Reason, val detail: String = "") : Link
+    /** [host] is the camera's address, or "USB" over a cable ([usb] true). */
+    data class Connecting(val host: String, val usb: Boolean = false) : Link
+    data class Connected(val host: String, val name: String, val info: DeviceInfo, val usb: Boolean = false) : Link
+    data class Failed(val host: String, val reason: Reason, val detail: String = "", val usb: Boolean = false) : Link
 
-    enum class Reason { UNREACHABLE, REFUSED, LOST, NOT_CANON, NOT_LOCAL }
+    enum class Reason { UNREACHABLE, REFUSED, LOST, NOT_CANON, NOT_LOCAL, USB_DETACHED, USB_DENIED, USB_OPEN }
 }
 
 data class CardState(
@@ -49,10 +56,16 @@ data class CardState(
 )
 
 /**
- * One camera connection for the whole app: PTP/IP session set-up, Canon remote mode, the GetEvent
- * poll, the card, shooting, live view and the firmware transfer. Every PTP call is serialised.
+ * One camera connection for the whole app, over Wi-Fi (PTP/IP) or a USB cable: session set-up, Canon
+ * remote mode, the GetEvent poll, the card, shooting, live view and the firmware transfer. Everything above
+ * the connection only sees [PtpTransport], so it works the same on both. Every PTP call is serialised.
  */
-class CameraSession(private val context: Context, private val scope: CoroutineScope, val network: CameraNetwork) {
+class CameraSession(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    val network: CameraNetwork,
+    val usb: UsbCameras,
+) {
     private val _link = MutableStateFlow<Link>(Link.Idle)
     val link: StateFlow<Link> = _link
 
@@ -74,7 +87,7 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
     }
     private val noThumb = HashSet<Int>()
 
-    private var client: PtpIpClient? = null
+    private var client: PtpTransport? = null
     private val io = Mutex()
     private var pollJob: Job? = null
     private var liveJob: Job? = null
@@ -87,6 +100,15 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
 
     // ---------- Connection ----------
 
+    /** The attached camera this session uses over USB (its UsbManager key), or null on Wi-Fi. */
+    private var usbKey: String? = null
+
+    init {
+        // The list of attached cameras changed: if ours is gone, the cable was pulled.
+        usb.onChanged = { keys -> usbKey?.let { if (it !in keys) usbGone() } }
+    }
+
+    /** Connects over Wi-Fi (PTP/IP) to [hostText], which must be a local address. */
     fun connect(hostText: String, guid: ByteArray, name: String) {
         val current = _link.value
         if (current is Link.Connecting || current is Link.Connected) return
@@ -97,39 +119,104 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
         }
         _link.value = Link.Connecting(hostText)
         scope.launch {
-            val result = withContext(Dispatchers.IO) { runCatching { open(addr, guid, name) } }
-            result.onSuccess { (c, info) ->
-                client = c
-                _link.value = Link.Connected(hostText, c.cameraName.ifBlank { info.model }, info)
-                startPolling()
-            }.onFailure { e ->
-                client?.close(); client = null
-                val reason = when {
-                    e is PtpException && e.message?.contains("refused") == true -> Link.Reason.REFUSED
-                    e is PtpException && e.code == -1 -> Link.Reason.NOT_CANON
-                    e is PtpException -> Link.Reason.LOST
-                    else -> Link.Reason.UNREACHABLE
+            val result = withContext(Dispatchers.IO) { runCatching { openIp(addr, guid, name) } }
+            result.onSuccess { (c, info) -> connected(c, info, hostText) }
+                .onFailure { e -> _link.value = Link.Failed(hostText, failReason(e), e.message.orEmpty()) }
+        }
+    }
+
+    /**
+     * Connects over a USB cable. Asks for Android's USB permission first if ShutterCtrl doesn't have it
+     * for this camera yet. [label] is what the Camera tab shows instead of an address ("USB").
+     */
+    fun connectUsb(camera: UsbCameras.Camera, label: String) {
+        val current = _link.value
+        if (current is Link.Connecting || current is Link.Connected) return
+        _link.value = Link.Connecting(label, usb = true)
+        usb.requestPermission(camera) { granted ->
+            if (_link.value !is Link.Connecting) return@requestPermission
+            if (!granted) {
+                _link.value = Link.Failed(label, Link.Reason.USB_DENIED, usb = true)
+                return@requestPermission
+            }
+            scope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val c = PtpUsbClient(usb.open(camera), camera.name)
+                        try {
+                            c.start()
+                        } catch (e: Exception) {
+                            c.close(); throw e
+                        }
+                        c to openSession(c)
+                    }
                 }
-                _link.value = Link.Failed(hostText, reason, e.message.orEmpty())
+                result.onSuccess { (c, info) ->
+                    if (!usb.isAttached(camera.key)) {
+                        c.onClosed = null; c.close()
+                        _link.value = Link.Failed(label, Link.Reason.USB_DETACHED, usb = true)
+                        return@onSuccess
+                    }
+                    usbKey = camera.key
+                    connected(c, info, label)
+                }.onFailure { e ->
+                    val reason = if (!usb.isAttached(camera.key) || e is UsbDetachedException) Link.Reason.USB_DETACHED else failReason(e)
+                    _link.value = Link.Failed(label, reason, e.message.orEmpty(), usb = true)
+                }
             }
         }
     }
 
-    private fun open(addr: InetAddress, guid: ByteArray, name: String): Pair<PtpIpClient, DeviceInfo> {
+    private fun connected(c: PtpTransport, info: DeviceInfo, host: String) {
+        client = c
+        c.onClosed = { e -> if (e != null) scope.launch { lost(e) } }
+        // The transport may have failed between set-up and here.
+        if (!c.isOpen) {
+            client = null
+            _link.value = Link.Failed(host, if (usbKey != null) Link.Reason.USB_DETACHED else Link.Reason.LOST, usb = usbKey != null)
+            usbKey = null
+            return
+        }
+        _link.value = Link.Connected(host, c.cameraName.ifBlank { info.model }, info, usb = usbKey != null)
+        startPolling()
+    }
+
+    private fun failReason(e: Throwable): Link.Reason = when {
+        e is UsbDetachedException -> Link.Reason.USB_DETACHED
+        e is UsbOpenException -> Link.Reason.USB_OPEN
+        e is PtpException && e.message?.contains("refused") == true -> Link.Reason.REFUSED
+        e is PtpException && e.code == -1 -> Link.Reason.NOT_CANON
+        e is PtpException -> Link.Reason.LOST
+        else -> Link.Reason.UNREACHABLE
+    }
+
+    private fun openIp(addr: InetAddress, guid: ByteArray, name: String): Pair<PtpTransport, DeviceInfo> {
         val factory = if (addr.isLoopbackAddress) javax.net.SocketFactory.getDefault() else network.socketFactory()
         val c = PtpIpClient(factory, addr, guid, name)
-        c.onClosed = { e -> if (e != null) scope.launch { lost(e.message.orEmpty()) } }
         try {
             c.connect()
+        } catch (e: Exception) {
+            c.close()
+            throw e
+        }
+        return c to openSession(c)
+    }
+
+    /**
+     * The same on every transport: GetDeviceInfo (must be a Canon), OpenSession, then Canon's remote and
+     * event modes. Closes [c] on failure.
+     */
+    private fun openSession(c: PtpTransport): DeviceInfo {
+        try {
             val di = c.transact(Op.GET_DEVICE_INFO)
             if (di.code != Rc.OK || di.data == null) throw PtpException("GetDeviceInfo failed: ${Rc.name(di.code)}")
             val info = DeviceInfo.parse(di.data)
             if (!info.manufacturer.contains("Canon", ignoreCase = true)) throw PtpException("Not a Canon camera", -1)
             val open = c.transact(Op.OPEN_SESSION, intArrayOf(1))
-            if (open.code != Rc.OK && open.code != 0x201E) throw PtpException("OpenSession failed: ${Rc.name(open.code)}") // 0x201E: already open
+            if (open.code != Rc.OK && open.code != Rc.SESSION_ALREADY_OPEN) throw PtpException("OpenSession failed: ${Rc.name(open.code)}")
             if (info.supports(Op.EOS_SET_REMOTE_MODE)) c.transact(Op.EOS_SET_REMOTE_MODE, intArrayOf(1))
             if (info.supports(Op.EOS_SET_EVENT_MODE)) c.transact(Op.EOS_SET_EVENT_MODE, intArrayOf(1))
-            return c to info
+            return info
         } catch (e: Exception) {
             c.onClosed = null
             c.close()
@@ -137,11 +224,28 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
         }
     }
 
-    private suspend fun lost(detail: String) {
+    private fun lost(e: Throwable) {
         val l = _link.value
         if (l !is Link.Connected) return
+        val key = usbKey
+        if (key != null && (e is UsbDetachedException || !usb.isAttached(key))) {
+            usbGone()
+            return
+        }
         teardown()
-        _link.value = Link.Failed(l.host, Link.Reason.LOST, detail)
+        _link.value = Link.Failed(l.host, Link.Reason.LOST, e.message.orEmpty(), usb = l.usb)
+    }
+
+    /**
+     * The USB cable was pulled (or the camera turned off): end the session, stop the intervalometer and
+     * say so. Safe to call more than once.
+     */
+    private fun usbGone() {
+        val l = _link.value
+        if (usbKey == null) return
+        runCatching { IntervalService.stop(context) }
+        teardown()
+        if (l is Link.Connected) _link.value = Link.Failed(l.host, Link.Reason.USB_DETACHED, usb = true)
     }
 
     fun disconnect() {
@@ -167,6 +271,7 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
         client?.onClosed = null
         client?.close()
         client = null
+        usbKey = null
         _props.value = emptyMap()
         _allowed.value = emptyMap()
         _card.value = CardState()
@@ -177,14 +282,14 @@ class CameraSession(private val context: Context, private val scope: CoroutineSc
     }
 
     /** Runs one PTP call on the IO thread, after any other call has finished. */
-    private suspend fun <T> call(block: (PtpIpClient) -> T): T = withContext(Dispatchers.IO) {
+    private suspend fun <T> call(block: (PtpTransport) -> T): T = withContext(Dispatchers.IO) {
         io.withLock {
             val c = client ?: throw PtpException("Not connected")
             block(c)
         }
     }
 
-    private fun PtpIpClient.ok(op: Int, params: IntArray = IntArray(0), data: ByteArray? = null): PtpIpClient.Result {
+    private fun PtpTransport.ok(op: Int, params: IntArray = IntArray(0), data: ByteArray? = null): PtpResult {
         val r = transact(op, params, data)
         if (r.code != Rc.OK) throw PtpException("${"0x%04X".format(op)} → ${Rc.name(r.code)}", r.code)
         return r

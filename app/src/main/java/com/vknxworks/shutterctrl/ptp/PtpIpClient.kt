@@ -1,8 +1,6 @@
 package com.vknxworks.shutterctrl.ptp
 
 import java.io.BufferedInputStream
-import java.io.ByteArrayOutputStream
-import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
@@ -12,8 +10,8 @@ import java.net.SocketTimeoutException
 import javax.net.SocketFactory
 
 /**
- * A PTP/IP connection: the command socket and the event socket. Blocking; call from a background thread.
- * One transaction at a time ([transact] is synchronized). The socket factory decides which network the
+ * The PTP/IP transport: the command socket and the event socket. Blocking; call from a background thread.
+ * One transaction at a time ([transactTo] is synchronized). The socket factory decides which network the
  * sockets use (the camera's Wi-Fi), see `net/CameraNetwork.kt`.
  */
 class PtpIpClient(
@@ -21,7 +19,7 @@ class PtpIpClient(
     private val host: InetAddress,
     private val guid: ByteArray,
     private val name: String,
-) : Closeable {
+) : PtpTransport {
 
     private var command: Socket? = null
     private var event: Socket? = null
@@ -31,14 +29,12 @@ class PtpIpClient(
     @Volatile private var closed = false
     private var eventThread: Thread? = null
 
-    /** Called on the event thread for every PTP event (code, params). Canon EOS uses GetEvent polling instead. */
-    var onEvent: ((Int, IntArray) -> Unit)? = null
+    override var onEvent: ((Int, IntArray) -> Unit)? = null
 
-    /** Called once when either socket fails or closes. */
-    var onClosed: ((Throwable?) -> Unit)? = null
+    override var onClosed: ((Throwable?) -> Unit)? = null
 
-    var cameraName: String = ""
-        private set
+    @Volatile private var ackName: String = ""
+    override val cameraName: String get() = ackName
 
     /**
      * Opens both channels. The camera may ask its owner to accept a new phone first, so the
@@ -55,7 +51,7 @@ class PtpIpClient(
         cmdOut.write(PtpIp.initCommandRequest(guid, name)); cmdOut.flush()
         val ack = PtpIp.read(cmdIn)
         val conn = when (ack.type) {
-            PtpIp.INIT_COMMAND_ACK -> PtpIp.parseInitAck(ack.payload).also { cameraName = it.name }.connectionNumber
+            PtpIp.INIT_COMMAND_ACK -> PtpIp.parseInitAck(ack.payload).also { ackName = it.name }.connectionNumber
             PtpIp.INIT_FAIL -> throw PtpException("Camera refused the connection (reason ${PtpIp.parseInitFail(ack.payload)})")
             else -> throw PtpException("Unexpected packet ${ack.type} during set-up")
         }
@@ -90,28 +86,14 @@ class PtpIpClient(
         }
     }
 
-    class Result(val code: Int, val params: IntArray, val data: ByteArray?)
-
-    /** A transaction with optional data out; incoming data is collected in memory. */
-    fun transact(op: Int, params: IntArray = IntArray(0), dataOut: ByteArray? = null): Result {
-        val buf = ByteArrayOutputStream()
-        var got = false
-        val r = transactTo(op, params, dataOut, { b, off, len -> got = true; buf.write(b, off, len) }, null)
-        return Result(r.code, r.params, if (got) buf.toByteArray() else null)
-    }
-
-    /**
-     * A transaction whose incoming data goes to [sink] in pieces (downloads), with [progress] getting
-     * (bytes so far, total).
-     */
     @Synchronized
-    fun transactTo(
+    override fun transactTo(
         op: Int,
         params: IntArray,
         dataOut: ByteArray?,
         sink: (ByteArray, Int, Int) -> Unit,
         progress: ((Long, Long) -> Unit)?,
-    ): Result {
+    ): PtpResult {
         check(!closed) { "Not connected" }
         val tid = ++transactionId
         try {
@@ -142,7 +124,7 @@ class PtpIpClient(
                     PtpIp.OPERATION_RESPONSE -> {
                         val r = PtpIp.parseResponse(p.payload)
                         if (r.transactionId != tid) continue
-                        return Result(r.code, r.params, null)
+                        return PtpResult(r.code, r.params, null)
                     }
                     PtpIp.PROBE_REQUEST -> { cmdOut.write(PtpIp.probeResponse()); cmdOut.flush() }
                     PtpIp.CANCEL -> throw PtpException("The camera cancelled the transfer")
@@ -160,7 +142,7 @@ class PtpIpClient(
      * holding the file in memory. [progress] gets (bytes sent, total).
      */
     @Synchronized
-    fun transactStreamOut(op: Int, params: IntArray, total: Long, source: InputStream, progress: ((Long, Long) -> Unit)?): Result {
+    override fun transactStreamOut(op: Int, params: IntArray, total: Long, source: InputStream, progress: ((Long, Long) -> Unit)?): PtpResult {
         check(!closed) { "Not connected" }
         val tid = ++transactionId
         try {
@@ -192,7 +174,7 @@ class PtpIpClient(
                 when (p.type) {
                     PtpIp.OPERATION_RESPONSE -> {
                         val r = PtpIp.parseResponse(p.payload)
-                        if (r.transactionId == tid) return Result(r.code, r.params, null)
+                        if (r.transactionId == tid) return PtpResult(r.code, r.params, null)
                     }
                     PtpIp.PROBE_REQUEST -> { cmdOut.write(PtpIp.probeResponse()); cmdOut.flush() }
                 }
@@ -222,5 +204,5 @@ class PtpIpClient(
         onClosed?.invoke(null)
     }
 
-    val isOpen get() = !closed
+    override val isOpen get() = !closed
 }

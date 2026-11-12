@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SystemUpdateAlt
+import androidx.compose.material.icons.outlined.Usb
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -125,7 +126,7 @@ private fun ConnectPanel(link: Link) {
                 Spacer(Modifier.size(12.dp))
                 Text(link.host, style = MaterialTheme.typography.headlineSmall)
             }
-            Text(stringResource(R.string.connecting_hint), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(if (link.usb) R.string.connecting_hint_usb else R.string.connecting_hint), style = MaterialTheme.typography.bodyMedium)
         } else {
             Text(stringResource(R.string.connect_title), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.connect_body), style = MaterialTheme.typography.bodyMedium)
@@ -139,11 +140,29 @@ private fun ConnectPanel(link: Link) {
             Link.Reason.LOST -> stringResource(R.string.fail_lost)
             Link.Reason.NOT_CANON -> stringResource(R.string.fail_not_canon)
             Link.Reason.NOT_LOCAL -> stringResource(R.string.fail_not_local)
+            Link.Reason.USB_DETACHED -> stringResource(R.string.fail_usb_detached)
+            Link.Reason.USB_DENIED -> stringResource(R.string.fail_usb_denied)
+            Link.Reason.USB_OPEN -> stringResource(R.string.fail_usb_open)
         }
         WarningCard(text, Icons.Outlined.ErrorOutline, Modifier.padding(horizontal = Gutter, vertical = 6.dp))
     }
 
     if (link !is Link.Connecting) {
+        val usbCameras by c.usb.cameras.collectAsStateWithLifecycle()
+        Group(stringResource(R.string.group_usb), footer = stringResource(R.string.usb_footer)) {
+            if (usbCameras.isEmpty()) {
+                GroupRow(stringResource(R.string.usb_none), stringResource(R.string.usb_none_sub), icon = Icons.Outlined.Usb)
+            }
+            usbCameras.forEach { cam ->
+                GroupRow(
+                    cam.name.ifBlank { stringResource(R.string.usb_camera_default) },
+                    stringResource(R.string.usb_camera_sub),
+                    icon = Icons.Outlined.Usb,
+                    showChevron = true,
+                    onClick = { c.session.connectUsb(cam, context.getString(R.string.usb_label)) },
+                )
+            }
+        }
         Group(stringResource(R.string.group_find), footer = stringResource(R.string.find_footer)) {
             GroupRow(
                 stringResource(if (searching) R.string.searching else R.string.search_network),

@@ -22,6 +22,9 @@
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
 
     <uses-feature android:name="android.hardware.wifi" android:required="true" />
+    <!-- Optional: a camera on a USB cable (USB host / OTG). No permission is needed for this; Android asks
+         you once per camera when you tap it. -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
     <!-- "Open in LumenCtrl": only that one app needs to be visible. -->
     <queries>
@@ -29,7 +32,7 @@
     </queries>
 
     <!-- intentMatchingFlags (Android 16+): other apps can only start ShutterCtrl with an intent that matches
-         its filters (the launcher). -->
+         its filters (the launcher, and "a Canon camera was plugged in"). -->
     <application
         android:name=".ShutterCtrlApp"
         android:allowBackup="false"
@@ -55,6 +58,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- A Canon camera on a USB cable: Android offers to open ShutterCtrl. The activity only re-reads
+                 UsbManager's device list; it never uses the intent's extras and never connects by itself. -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_device_filter" />
         </activity>
 
         <service

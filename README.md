@@ -1,20 +1,21 @@
 # ShutterCtrl
 
-**A private remote for your Canon camera over Wi-Fi: card browser, downloads, remote shutter, live view, intervalometer and firmware transfer, with no Canon account and no cloud.**
+**A private remote for your Canon camera over Wi-Fi or a USB cable: card browser, downloads, remote shutter, live view, intervalometer and firmware transfer, with no Canon account and no cloud.**
 
 [![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/ShutterCtrl?label=download)](https://github.com/VoidedKN0X/ShutterCtrl/releases/latest) ![Android 15+](https://img.shields.io/badge/Android-15%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) ![Local network only](https://img.shields.io/badge/internet-local%20network%20only-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
 
-ShutterCtrl replaces Canon Camera Connect for the things you do on Wi-Fi: browse the camera's card, download JPEG and RAW files, fire the shutter, watch live view and change exposure, run an intervalometer, and send a firmware file you downloaded from Canon. It talks to the camera directly with PTP/IP, the standard picture transfer protocol over the network, and to nothing else: no Canon ID, no image.canon, no analytics.
+ShutterCtrl replaces Canon Camera Connect for the things you do on Wi-Fi, and does the same over a USB cable: browse the camera's card, download JPEG and RAW files, fire the shutter, watch live view and change exposure, run an intervalometer, and send a firmware file you downloaded from Canon. It talks to the camera directly with PTP, the standard picture transfer protocol (PTP/IP on the network, PTP over USB on the cable), and to nothing else: no Canon ID, no image.canon, no analytics.
 
 Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/VoidedKN0X/ShutterCtrl"><img src=".github/assets/badge_obtainium.png" alt="Get it on Obtainium" height="80"></a>
 
-> **Tested on: none yet.** ShutterCtrl 0.1 was written without a Canon camera at hand. The protocol code follows what Canon Camera Connect itself sends (see [Protocol](#protocol)), has unit tests, and was run against a simulated camera (connect, card, thumbnails, downloads, shutter, exposure, live view, intervalometer), but it hasn't talked to a real camera yet. The firmware transfer has only been unit-tested. If you try it, please [report](https://github.com/VoidedKN0X/ShutterCtrl/issues/new/choose) your camera model and what worked.
+> **Tested on: none yet.** ShutterCtrl 0.1 was written without a Canon camera at hand. The protocol code follows what Canon Camera Connect itself sends (see [Protocol](#protocol)), has unit tests, and was run against a simulated camera (connect, card, thumbnails, downloads, shutter, exposure, live view, intervalometer), but it hasn't talked to a real camera yet. The firmware transfer has only been unit-tested. **USB (new in 0.2) is untested on a real camera too:** the USB framing and a whole session (set-up, a download over many packets, events, a pulled cable) were run against a simulated camera in unit tests, and the connect screen was checked on a phone with no camera plugged in. If you try it, please [report](https://github.com/VoidedKN0X/ShutterCtrl/issues/new/choose) your camera model and what worked.
 
 ## Features
 
 - **Connect over Wi-Fi:** on the camera's own Wi-Fi (no internet) or on your home Wi-Fi. Search the network (SSDP/UPnP), use the camera's access point address, or type its IP address
+- **Connect over USB:** plug the camera into the phone with a cable and tap it. Everything below works the same over the cable (see [USB](#usb))
 - **Card browser** with thumbnails from the camera, newest first
 - **Download JPEG and RAW** (CR2, CR3) to **Pictures/ShutterCtrl**, with progress. The file only appears in your library once it's complete. RAW types the phone's media library doesn't know (on many phones CR3) go to **Download/ShutterCtrl** instead
 - **Open in [LumenCtrl](https://github.com/VoidedKN0X/LumenCtrl):** download and edit a JPEG or RAW in one tap, if LumenCtrl is installed
@@ -25,18 +26,42 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
 
-### Not in 0.1
+### Not in 0.2
 
 - **GPS tagging from the phone:** not included. ShutterCtrl has no location permission.
-- **Bluetooth pairing, wake-up and the Bluetooth remote:** not included. Turn on the camera's Wi-Fi from the camera's menu instead.
+- **Bluetooth pairing, wake-up and the Bluetooth remote:** not included. Turn on the camera's Wi-Fi from the camera's menu, or use a USB cable, instead.
 - **Movies:** the card browser lists photos; videos may show up but aren't the focus of this version.
 - Canon's cloud services (Canon ID, image.canon, streaming, error-log upload) are left out on purpose.
+
+## USB
+
+ShutterCtrl can also control the camera over a USB cable, with PTP over USB (the USB "still image" class that cameras use with computers). Card, downloads, shutter, live view and exposure, the intervalometer and the firmware transfer all work the same as on Wi-Fi.
+
+**Not tested with a real camera yet.** The USB code has unit tests against a simulated camera, but no Canon camera was plugged in while it was written. Please [report](https://github.com/VoidedKN0X/ShutterCtrl/issues/new/choose) your camera model and what worked.
+
+**What you need:**
+
+- A phone that can act as a **USB host (OTG)**. Most Android phones with USB-C can.
+- A **cable from the camera to the phone:** USB-C to USB-C for cameras with a USB-C port, or the camera's own cable (Micro-B or Mini-B) with a USB-C OTG adapter. A charge-only cable won't work; it must carry data.
+- **On the camera:** turn the camera's **Wi-Fi off** (many Canon cameras don't use the USB port for remote control while Wi-Fi or a wireless connection is on), and it helps to turn **Auto power off** off for long sessions and intervalometer series. Some models have a USB connection setting in the menu; if there is one, choose the computer / PTP connection, not a USB webcam or charging-only mode.
+
+**How it works:**
+
+1. Plug in the camera and turn it on. It shows up under **Camera > Connect over USB**. Android may also offer to open ShutterCtrl right away.
+2. Tap it. The first time, Android asks whether ShutterCtrl may use the camera; allow it.
+3. If another app (for example the Files app or a photo import app) opened the camera first, ShutterCtrl takes over its connection. If it still can't open the camera, close that app, unplug and plug in again.
+
+**Pulling the cable** (or turning the camera off) ends the session straight away, stops a running intervalometer series and says so on the Camera tab. Don't unplug during a firmware transfer: nothing is installed until you start the update on the camera, but the transfer has to start over.
+
+ShutterCtrl only lists Canon cameras (USB vendor 0x04A9 with a still-image interface). The plug-in notice is only a hint to look at the list again; ShutterCtrl never connects to anything by itself.
 
 ## Firmware updates
 
 ShutterCtrl never downloads firmware and never contacts Canon. You download the `.FIR` file for your camera from Canon's support website yourself, then pick it in **Camera > Firmware update**.
 
-**What ships in 0.1: Canon's own firmware transfer.** Canon Camera Connect sends firmware to the camera with a Canon PTP operation, `0x911F` (`UpdateFirmware`). Its PTP library (`CPtpInterface::DS_UpdateFirmware` in `libEDSDKCore.so`) shows the whole sequence: the file goes in 2 MiB pieces, each one an `0x911F` operation with two parameters (the file's total size and the piece's offset) and a data phase made of a 32-byte field with the file name, then up to 2 MiB − 32 bytes of the file. After the last piece Canon's app only says "Follow the instructions on the camera screen to start the firmware update": the camera, not the phone, checks the file and installs it. libgphoto2 knows the same operation code (`PTP_OC_CANON_EOS_UpdateFirmware 0x911F`). Because the sequence is clear in Canon's code and matches libgphoto2, ShutterCtrl uses it, exactly as Canon's app does.
+The firmware transfer works the same over Wi-Fi and USB.
+
+**Canon's own firmware transfer.** Canon Camera Connect sends firmware to the camera with a Canon PTP operation, `0x911F` (`UpdateFirmware`). Its PTP library (`CPtpInterface::DS_UpdateFirmware` in `libEDSDKCore.so`) shows the whole sequence: the file goes in 2 MiB pieces, each one an `0x911F` operation with two parameters (the file's total size and the piece's offset) and a data phase made of a 32-byte field with the file name, then up to 2 MiB − 32 bytes of the file. After the last piece Canon's app only says "Follow the instructions on the camera screen to start the firmware update": the camera, not the phone, checks the file and installs it. libgphoto2 knows the same operation code (`PTP_OC_CANON_EOS_UpdateFirmware 0x911F`). Because the sequence is clear in Canon's code and matches libgphoto2, ShutterCtrl uses it, exactly as Canon's app does.
 
 **Fallback: copy to the card.** If a camera doesn't list `0x911F` in its supported operations but does list the standard `SendObjectInfo` (`0x100C`) and `SendObject` (`0x100D`), ShutterCtrl copies the `.FIR` file to the root of the card instead, and you run **Firmware update** from the camera's own menu. If a camera offers neither, ShutterCtrl says so and you copy the file with a card reader.
 
@@ -52,6 +77,8 @@ ShutterCtrl never downloads firmware and never contacts Canon. You download the 
 ## Protocol
 
 PTP/IP on TCP port 15740: every packet is a length (u32, little-endian) and a type (u32), then the payload. ShutterCtrl implements Init Command Request/Ack/Fail (1, 2, 5), Init Event Request/Ack (3, 4), Operation Request/Response (6, 7), Event (8), Start Data, Data and End Data (9, 10, 12), Cancel (11) and Probe Request/Response (13, 14), with unit tests for every packet.
+
+PTP over USB (USB Still Image class 6, subclass 1, protocol 1): every container is a length (u32), a type (u16: 1 command, 2 data, 3 response, 4 event), a code (u16) and a transaction id (u32), then the parameters or data, on the bulk-out and bulk-in endpoints; events arrive on the interrupt endpoint. ShutterCtrl handles data split over many transfers, zero-length packets after a container that fills its last packet (sent and received), and the class requests Cancel (`0x64`, when saving a download fails), Get Device Status (`0x67`) and Device Reset (`0x66`, only if the camera reports it is still busy from an earlier app when ShutterCtrl connects). The operations and Canon codes below are the same on both connections.
 
 Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDKCore.so`, the `CPtpInterface::DS_*` functions, with the opcode as a constant in each) and against libgphoto2's `ptp.h`. They agree on every code below.
 
@@ -81,14 +108,15 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 
 ## Requirements
 
-- A Canon camera with Wi-Fi that offers remote control from a computer (EOS Utility) or a smartphone over Wi-Fi. Many EOS and PowerShot cameras from the last decade do. Some newer models only start Wi-Fi for a smartphone after Bluetooth pairing; those need the camera's computer (EOS Utility) Wi-Fi mode with ShutterCtrl 0.1.
+- A Canon camera with Wi-Fi that offers remote control from a computer (EOS Utility) or a smartphone over Wi-Fi. Many EOS and PowerShot cameras from the last decade do. Some newer models only start Wi-Fi for a smartphone after Bluetooth pairing; those need the camera's computer (EOS Utility) Wi-Fi mode with ShutterCtrl.
+- Or, over USB: a Canon camera that EOS Utility can control by cable, a data cable, and a phone that supports USB host (OTG). See [USB](#usb).
 - Android 15 or newer, on a 64-bit ARM phone
 - Works on any Android ROM as a normal app. It doesn't need root.
 - **Google-free and de-Googled:** no Google Play services, Firebase or other Google libraries, and the app never contacts Google.
 
 ## Install
 
-1. Open the [latest release](https://github.com/VoidedKN0X/ShutterCtrl/releases/latest) on your phone, scroll down to **Assets** and tap the file that ends in `.apk` (for example `ShutterCtrl-v0.1.0.apk`). The "Source code" zip and tar.gz files are not the app; you don't need them.
+1. Open the [latest release](https://github.com/VoidedKN0X/ShutterCtrl/releases/latest) on your phone, scroll down to **Assets** and tap the file that ends in `.apk` (for example `ShutterCtrl-v0.2.0.apk`). The "Source code" zip and tar.gz files are not the app; you don't need them.
 2. Open it on your phone. Android may ask you to allow installing apps from your browser or file manager.
 3. Updates install over the old version. Your settings are kept.
 
@@ -99,6 +127,8 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 1. **On the camera,** turn on Wi-Fi and start a connection for remote control from a computer (EOS Utility) or a smartphone. Menus differ by model.
 2. **On the phone,** join the camera's own Wi-Fi network in Android's Wi-Fi settings (choose to stay connected when Android says it has no internet), or put the camera on your home Wi-Fi.
 3. **In ShutterCtrl,** tap **Search this Wi-Fi**, **Use this Wi-Fi's access point**, or type the camera's IP address and tap **Connect**. The first time, accept ShutterCtrl on the camera's screen.
+
+**With a cable instead:** turn the camera's Wi-Fi off, plug it into the phone and tap it under **Connect over USB** (see [USB](#usb)).
 
 - **Camera tab:** battery, Av/Tv/ISO/exposure, Focus and Shoot, self-timer, live view, the intervalometer, firmware and Disconnect.
 - **Card tab:** the camera's pictures. Tap one to download it or open it in LumenCtrl.
@@ -137,6 +167,8 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 
 ShutterCtrl doesn't ask for "Wi-Fi state" or "change network connectivity": it doesn't need to read Wi-Fi names or switch networks, only to send its own sockets over the Wi-Fi you joined.
 
+**USB needs no permission.** The cable connection uses Android's USB host feature (optional, so the app still installs on phones without it). Android asks you once per camera, in its own dialog, whether ShutterCtrl may use it.
+
 See [Privacy](#privacy) for what happens to your data.
 
 ## App lock
@@ -156,6 +188,7 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 
 - **Local network only.** ShutterCtrl opens sockets only to private and link-local addresses (10.x, 172.16–31.x, 192.168.x, 169.254.x, and IPv6 fc00::/7 and fe80::/10). Anything else, including names that would need a DNS lookup, is refused before a connection is made. It never contacts Canon, Google or anyone else on the internet.
 - **Cleartext:** the camera protocols (PTP/IP, and reading a camera's UPnP description during a search) are plain sockets to those local addresses. Android's network security config turns cleartext HTTP off for everything else.
+- **Over USB,** ShutterCtrl talks only to the Canon camera you tap, and only after you allow it in Android's dialog.
 - **On the camera's own Wi-Fi,** ShutterCtrl binds its sockets to that Wi-Fi network, so the traffic goes to the camera and never out over mobile data.
 - **Pairing identity:** the camera remembers this phone by a random 16-byte identity made by ShutterCtrl, and the name "ShutterCtrl". No phone name, account or serial number is sent. You can reset the identity in Settings.
 - ShutterCtrl doesn't read or keep the camera's serial number.
