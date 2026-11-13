@@ -19,10 +19,12 @@ class ShutterCtrlApp : Application() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 AppLock.onForeground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
+                container.geo.setForeground(true)
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 AppLock.onBackground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
+                container.geo.setForeground(false)
             }
         })
     }

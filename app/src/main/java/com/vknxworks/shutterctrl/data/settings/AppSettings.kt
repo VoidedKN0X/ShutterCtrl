@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.vknxworks.shutterctrl.R
+import com.vknxworks.shutterctrl.ptp.Bracketing
+import com.vknxworks.shutterctrl.ptp.FocusStack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,6 +49,16 @@ data class AppSettings(
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     val hideScreenshots: Boolean = false,
     val hideRecents: Boolean = false,
+    /** Write the phone's position into downloaded JPEGs (off until turned on; needs the location permission). */
+    val geotag: Boolean = false,
+    /** Bracketing: shots and step (in thirds of a stop). */
+    val bracketShots: Int = 3,
+    val bracketStepThirds: Int = 3,
+    /** Focus stacking: shots, step size (1 small … 3 large), steps between shots, direction. */
+    val stackShots: Int = 10,
+    val stackStep: Int = 1,
+    val stackDrives: Int = 3,
+    val stackTowardFar: Boolean = true,
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -60,6 +72,13 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
+        val geotag = booleanPreferencesKey("geotag")
+        val bracketShots = intPreferencesKey("bracket_shots")
+        val bracketStepThirds = intPreferencesKey("bracket_step_thirds")
+        val stackShots = intPreferencesKey("stack_shots")
+        val stackStep = intPreferencesKey("stack_step")
+        val stackDrives = intPreferencesKey("stack_drives")
+        val stackTowardFar = booleanPreferencesKey("stack_toward_far")
     }
 
     private val prefs: Flow<Preferences> = context.appDataStore.data.catch { e ->
@@ -80,6 +99,13 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
+        geotag = this[K.geotag] ?: false,
+        bracketShots = (this[K.bracketShots] ?: 3).takeIf { it in Bracketing.SHOT_COUNTS } ?: 3,
+        bracketStepThirds = (this[K.bracketStepThirds] ?: 3).takeIf { it in Bracketing.STEP_THIRDS } ?: 3,
+        stackShots = (this[K.stackShots] ?: 10).takeIf { it in FocusStack.SHOT_COUNTS } ?: 10,
+        stackStep = (this[K.stackStep] ?: 1).coerceIn(1, 3),
+        stackDrives = (this[K.stackDrives] ?: 3).coerceIn(1, 20),
+        stackTowardFar = this[K.stackTowardFar] ?: true,
     )
 
     /** Saves a change. If the phone's storage fails, the change is dropped instead of closing the app. */
@@ -96,6 +122,13 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 p[K.lockTimeout] = s.lockTimeout.name
                 p[K.hideScreenshots] = s.hideScreenshots
                 p[K.hideRecents] = s.hideRecents
+                p[K.geotag] = s.geotag
+                p[K.bracketShots] = s.bracketShots
+                p[K.bracketStepThirds] = s.bracketStepThirds
+                p[K.stackShots] = s.stackShots
+                p[K.stackStep] = s.stackStep
+                p[K.stackDrives] = s.stackDrives
+                p[K.stackTowardFar] = s.stackTowardFar
             }
         } catch (e: IOException) {
             // Nothing to do: the settings stay as they were.

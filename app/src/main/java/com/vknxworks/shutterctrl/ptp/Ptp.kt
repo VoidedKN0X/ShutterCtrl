@@ -31,6 +31,10 @@ object Op {
     const val EOS_REMOTE_RELEASE_ON = 0x9128
     const val EOS_REMOTE_RELEASE_OFF = 0x9129
     const val EOS_GET_VIEWFINDER_DATA = 0x9153
+
+    // Canon EOS, libgphoto2 only (PTP_OC_CANON_EOS_DriveLens). Moves the focus a step while live view runs:
+    // parameter 1..3 = near (small, medium, large), 0x8001..0x8003 = far. Offered only when the camera lists it.
+    const val EOS_DRIVE_LENS = 0x9155
 }
 
 object Rc {

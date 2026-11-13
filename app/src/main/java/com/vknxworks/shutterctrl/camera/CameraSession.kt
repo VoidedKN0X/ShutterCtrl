@@ -5,7 +5,9 @@ import android.net.Uri
 import android.util.LruCache
 import com.vknxworks.shutterctrl.net.CameraNetwork
 import com.vknxworks.shutterctrl.net.LocalAddress
+import com.vknxworks.shutterctrl.ptp.BracketPlan
 import com.vknxworks.shutterctrl.ptp.CanonData
+import com.vknxworks.shutterctrl.ptp.FocusStack
 import com.vknxworks.shutterctrl.ptp.CanonEventParser
 import com.vknxworks.shutterctrl.ptp.DeviceInfo
 import com.vknxworks.shutterctrl.ptp.ObjectInfo
@@ -65,6 +67,8 @@ class CameraSession(
     private val scope: CoroutineScope,
     val network: CameraNetwork,
     val usb: UsbCameras,
+    /** Geotags a finished download (uri, MIME type) before it appears in the library; see LocationLogger. */
+    private val geotag: (Uri, String) -> Unit = { _, _ -> },
 ) {
     private val _link = MutableStateFlow<Link>(Link.Idle)
     val link: StateFlow<Link> = _link
@@ -77,6 +81,11 @@ class CameraSession(
 
     private val _card = MutableStateFlow(CardState())
     val card: StateFlow<CardState> = _card
+
+    /** A bracketing or focus-stacking series in progress (null when none). */
+    private val _series = MutableStateFlow<Series?>(null)
+    val series: StateFlow<Series?> = _series
+    private var seriesJob: Job? = null
 
     private val _liveFrame = MutableStateFlow<ByteArray?>(null)
     val liveFrame: StateFlow<ByteArray?> = _liveFrame
@@ -266,6 +275,8 @@ class CameraSession(
     }
 
     private fun teardown() {
+        seriesJob?.cancel(); seriesJob = null
+        _series.value = null
         pollJob?.cancel(); pollJob = null
         liveJob?.cancel(); liveJob = null
         client?.onClosed = null
@@ -404,7 +415,7 @@ class CameraSession(
                 }
                 if (r.code != Rc.OK) throw PtpException("Download failed: ${Rc.name(r.code)}", r.code)
             }
-            saver.finish(pending)
+            saver.finish(pending) { uri -> geotag(uri, info.mime) }
             pending.uri
         } catch (e: Exception) {
             saver.abort(pending)
@@ -422,15 +433,16 @@ class CameraSession(
 
     /**
      * One shot: half press (focus), full press, then both released. Canon's RemoteReleaseOn takes the
-     * button state (1 half, 2 full) and an AF flag (0 with AF).
+     * button state (1 half, 2 full) and an AF flag (0 with AF, 1 without: focus stays where it is).
      */
-    suspend fun shoot() {
+    suspend fun shoot(af: Boolean = true) {
+        val flag = if (af) 0 else 1
         call { c ->
-            c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(1, 0))
+            c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(1, flag))
         }
         delay(250)
         try {
-            call { c -> c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(2, 0)) }
+            call { c -> c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(2, flag)) }
             delay(150)
         } finally {
             withContext(kotlinx.coroutines.NonCancellable) {
@@ -444,6 +456,102 @@ class CameraSession(
         call { c -> c.ok(Op.EOS_SET_DEVICE_PROP_VALUE_EX, data = CanonData.propValue(prop, value)) }
         _props.update { it + (prop to value) }
     }
+
+    // ---------- Bracketing and focus stacking ----------
+
+    /** Progress of a series: [done] of [total] shots; [error] set when it stopped early. */
+    data class Series(val kind: Kind, val done: Int, val total: Int, val error: String? = null, val finished: Boolean = false) {
+        enum class Kind { BRACKET, FOCUS_STACK }
+    }
+
+    /** Focus stacking needs Canon's DriveLens and live view (the lens is only driven while live view runs). */
+    val canFocusStack: Boolean get() = canLiveView && info?.supports(Op.EOS_DRIVE_LENS) == true
+
+    /** Whether the camera can take setting changes at all (bracketing also needs the values it allows). */
+    val canSetProps: Boolean get() = info?.supports(Op.EOS_SET_DEVICE_PROP_VALUE_EX) == true
+
+    /** Moves the focus one DriveLens step (see [FocusStack.driveParam]). Live view must be running. */
+    suspend fun driveLens(param: Int) {
+        call { c -> c.ok(Op.EOS_DRIVE_LENS, intArrayOf(param)) }
+    }
+
+    /**
+     * Exposure bracketing: for each shot, set the value, give the camera a moment, shoot (autofocus only on
+     * the first shot, so every frame is focused the same), and put the starting value back at the end.
+     */
+    fun startBracket(plan: BracketPlan) {
+        if (seriesJob?.isActive == true || client == null) return
+        val total = plan.shots.size
+        _series.value = Series(Series.Kind.BRACKET, 0, total)
+        seriesJob = scope.launch {
+            var error: String? = null
+            try {
+                plan.shots.forEachIndexed { i, shot ->
+                    setProp(plan.method.prop, shot.code)
+                    delay(SETTLE_MS)
+                    shoot(af = i == 0)
+                    _series.value = Series(Series.Kind.BRACKET, i + 1, total)
+                    delay(BETWEEN_SHOTS_MS)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = e.message.orEmpty()
+            } finally {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    if (client != null) runCatching { setProp(plan.method.prop, plan.restore) }
+                    _series.value = _series.value?.copy(error = error, finished = true)
+                }
+            }
+        }
+    }
+
+    /**
+     * Focus stacking: shot, focus moved by DriveLens, next shot… Shots are taken without autofocus so the
+     * camera doesn't undo the steps. Live view must be running (the caller is the live view screen).
+     */
+    fun startFocusStack(actions: List<FocusStack.Action>) {
+        if (seriesJob?.isActive == true || client == null) return
+        val total = actions.count { it is FocusStack.Action.Shoot }
+        _series.value = Series(Series.Kind.FOCUS_STACK, 0, total)
+        seriesJob = scope.launch {
+            var error: String? = null
+            var done = 0
+            try {
+                for (a in actions) {
+                    when (a) {
+                        is FocusStack.Action.Shoot -> {
+                            shoot(af = false)
+                            done++
+                            _series.value = Series(Series.Kind.FOCUS_STACK, done, total)
+                            delay(BETWEEN_SHOTS_MS)
+                        }
+                        is FocusStack.Action.Drive -> {
+                            driveLens(a.param)
+                            delay(DRIVE_MS)
+                        }
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = e.message.orEmpty()
+            } finally {
+                _series.value = _series.value?.copy(error = error, finished = true)
+            }
+        }
+    }
+
+    /** Stops a series after the step in progress (bracketing still puts the starting value back). */
+    fun stopSeries() {
+        seriesJob?.cancel()
+    }
+
+    fun clearSeries() {
+        if (seriesJob?.isActive != true) _series.value = null
+    }
+
+    val seriesRunning: Boolean get() = seriesJob?.isActive == true
 
     // ---------- Live view ----------
 
@@ -485,6 +593,15 @@ class CameraSession(
     val liveViewRunning get() = liveJob != null
 
     // ---------- Firmware ----------
+
+    private companion object {
+        /** After a setting change, before the shot. */
+        const val SETTLE_MS = 400L
+        /** After a shot, so the camera can store it before the next one. */
+        const val BETWEEN_SHOTS_MS = 900L
+        /** After each focus step. */
+        const val DRIVE_MS = 250L
+    }
 
     val firmwareRoute: FirmwareRules.Route
         get() = info?.let { FirmwareRules.route(it.supports(Op.EOS_UPDATE_FIRMWARE), it.supports(Op.SEND_OBJECT_INFO) && it.supports(Op.SEND_OBJECT)) }

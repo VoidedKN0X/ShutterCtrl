@@ -4,6 +4,18 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.3.0 (2026-11-13)
+
+### New
+
+- **Exposure bracketing** on the Camera tab: take 3, 5, 7 or 9 shots ⅓, ⅔, 1 or 2 stops apart around the current exposure, for HDR or tricky light. ShutterCtrl uses exposure compensation, or the shutter speed when the camera is in M mode, and only values the camera says it accepts right now; it shows the steps it will use before you start. Autofocus runs on the first shot only, and the camera's starting value is put back afterwards. The section only appears when the camera reports those values.
+- **Focus stacking** in live view: ShutterCtrl takes a shot, moves the focus a few steps with Canon's lens-drive command, takes the next shot, and so on, without autofocus, for 5 to 50 shots. Choose the step size, how many steps between shots and the direction; **Near** and **Far** move the focus to your starting point first. Merge the photos in a focus-stacking program afterwards. The section only appears on cameras that offer the lens-drive command. Not tested on a real camera yet: please report your model.
+- **Geotag downloads** (Settings > Downloads, off until you turn it on): downloaded JPEG photos get the phone's position at the time they were taken. While the option is on and ShutterCtrl is open, the phone notes its position (kept on the phone for 24 hours, never sent anywhere); each photo gets the position nearest to its capture time, within 10 minutes. Photos that already have a position from the camera keep it, and RAW files are left as they are. Turning the option off deletes the notes.
+
+### Privacy
+
+- **Location permission, only if you turn on geotagging.** ShutterCtrl now lists precise and approximate location; Android asks only when you turn on Geotag downloads, and with the option off nothing reads your location. Allowing only approximate location works too, less precisely.
+
 ## v0.2.1 (2026-11-13)
 
 A security and maintenance release. Nothing changes in how you use ShutterCtrl.

@@ -43,8 +43,10 @@ class Saver(private val context: Context) {
         return Pending(uri, out)
     }
 
-    fun finish(p: Pending) {
+    /** Publishes the finished file; [beforePublish] can still change it (geotagging) while it's hidden. */
+    fun finish(p: Pending, beforePublish: ((Uri) -> Unit)? = null) {
         p.out.close()
+        beforePublish?.let { runCatching { it(p.uri) } }
         context.contentResolver.update(p.uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
     }
 

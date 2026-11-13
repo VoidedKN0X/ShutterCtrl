@@ -6,6 +6,7 @@ import com.vknxworks.shutterctrl.camera.IntervalService
 import com.vknxworks.shutterctrl.data.lock.LockVault
 import com.vknxworks.shutterctrl.data.settings.AppSettings
 import com.vknxworks.shutterctrl.data.settings.SettingsRepository
+import com.vknxworks.shutterctrl.geo.LocationLogger
 import com.vknxworks.shutterctrl.net.CameraNetwork
 import com.vknxworks.shutterctrl.ui.lock.AppLock
 import com.vknxworks.shutterctrl.usb.UsbCameras
@@ -13,6 +14,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Manual dependency container; one per process. */
@@ -28,14 +32,18 @@ class AppContainer(val context: Context) {
     /** Canon cameras on a USB cable (only listed; nothing is opened until you tap one). */
     val usb = UsbCameras(context)
 
+    /** Geotag downloads: the phone's short location log, only while the option is on. */
+    val geo = LocationLogger(context)
+
     /** The one camera connection, over Wi-Fi or USB. */
-    val session = CameraSession(context, appScope, network, usb).also { usb.start() }
+    val session = CameraSession(context, appScope, network, usb, geotag = { uri, mime -> geo.tag(uri, mime) }).also { usb.start() }
 
     /** The app lock's PIN and fingerprint key (the shared Ctrl series lock). */
     val vault = LockVault(context, "shutterctrl")
 
     init {
         AppLock.onLocked = { onLocked() }
+        appScope.launch { settings.settings.map { it.geotag }.distinctUntilChanged().collect { geo.setEnabled(it) } }
     }
 
     suspend fun enableLock(pin: String) {

@@ -268,6 +268,7 @@ private fun ConnectedPanel(link: Link.Connected) {
         )
     }
     IntervalGroup()
+    BracketGroup()
     Group(stringResource(R.string.group_camera)) {
         GroupRow(
             stringResource(R.string.firmware),

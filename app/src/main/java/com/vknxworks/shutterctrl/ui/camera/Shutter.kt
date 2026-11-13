@@ -47,6 +47,9 @@ fun ShutterButtons(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val interval by IntervalService.state.collectAsStateWithLifecycle()
+    // A bracketing or focus-stacking series has the shutter.
+    val series by session.series.collectAsStateWithLifecycle()
+    val seriesBusy = series?.finished == false
     var focusing by remember { mutableStateOf(false) }
     var countdown by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -62,7 +65,7 @@ fun ShutterButtons(modifier: Modifier = Modifier) {
                     runCatching { session.halfPress(on) }.onSuccess { focusing = on }.onFailure { focusing = false; failed() }
                 }
             },
-            enabled = !busy && !interval.active,
+            enabled = !busy && !interval.active && !seriesBusy,
             modifier = Modifier.weight(1f),
         ) {
             Icon(Icons.Outlined.CenterFocusStrong, null, tint = if (focusing) CtrlColors.AccentText else CtrlColors.Text)
@@ -100,7 +103,7 @@ fun ShutterButtons(modifier: Modifier = Modifier) {
                     }
                 }
             },
-            enabled = (!busy || countdown > 0) && !interval.active,
+            enabled = (!busy || countdown > 0) && !interval.active && !seriesBusy,
             icon = if (settings.selfTimer > 0) Icons.Outlined.Timer else null,
             modifier = Modifier.weight(1.4f),
         )

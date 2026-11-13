@@ -20,6 +20,10 @@
     <!-- Hides other apps' floating windows over the lock, PIN and confirmation screens only.
          Install-time permission, no prompt. -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+    <!-- Geotag downloads (off until you turn it on; asked for only then): the phone's position while ShutterCtrl
+         is open, written into downloaded JPEGs. Android needs approximate location declared next to precise. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <uses-feature android:name="android.hardware.wifi" android:required="true" />
     <!-- Optional: a camera on a USB cable (USB host / OTG). No permission is needed for this; Android asks

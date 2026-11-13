@@ -22,13 +22,16 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Remote shutter:** Focus (half press, held until you release it) and Shoot, with a 2 or 10 second self-timer
 - **Live view** from the camera, with **Av, Tv, ISO and exposure compensation** chosen from the values the camera allows in its current mode
 - **Intervalometer:** N shots every T seconds, also with the screen off. It runs in a foreground service only while a series is active, with a notification and Stop
+- **Exposure bracketing:** 3, 5, 7 or 9 shots at ⅓, ⅔, 1 or 2 stops apart, around the current exposure, with exposure compensation (or with the shutter speed in M mode). Shown only when the camera reports values it accepts; the starting value is put back afterwards
+- **Focus stacking** in live view: a shot, the focus moved a few steps with Canon's DriveLens, the next shot, and so on (5 to 50 shots, small, medium or large steps, towards far or near), without autofocus. Near and Far buttons set the starting point. Shown only on cameras that list DriveLens
+- **Geotag downloads** (off until you turn it on): downloaded JPEG photos get the phone's position at the time they were taken, from a short location log kept on the phone while ShutterCtrl is open
 - **Firmware transfer:** send a `.FIR` file you downloaded from Canon's website yourself, with safety checks (see [Firmware updates](#firmware-updates))
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
 
 ### Not in 0.2
 
-- **GPS tagging from the phone:** not included. ShutterCtrl has no location permission.
+- **GPS tagging of RAW files:** Android can't write positions into CR2/CR3 files, so only JPEG photos are geotagged, and only for time ShutterCtrl was open.
 - **Bluetooth pairing, wake-up and the Bluetooth remote:** not included. Turn on the camera's Wi-Fi from the camera's menu, or use a USB cable, instead.
 - **Movies:** the card browser lists photos; videos may show up but aren't the focus of this version.
 - Canon's cloud services (Canon ID, image.canon, streaming, error-log upload) are left out on purpose.
@@ -100,7 +103,8 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 **Not confirmed in Canon's code, from libgphoto2 and the PTP standard only:**
 
 - The standard operations `GetDeviceInfo 0x1001`, `OpenSession 0x1002`, `CloseSession 0x1003`, `GetStorageIDs 0x1004`, `GetObjectHandles 0x1007`, `GetObjectInfo 0x1008`, `GetThumb 0x100A`, `SendObjectInfo 0x100C`, `SendObject 0x100D` and `GetPartialObject 0x101B` (standard PTP; Canon's app uses its own variants `0x9101`, `0x9103`, `0x9104`, `0x910A` instead, and `0x1009 GetObject` as a fallback, which is in its code).
-- The **button values** for RemoteReleaseOn/Off: 1 = half press, 2 = full press, second parameter 0 = with autofocus. Canon's code passes values it gets from elsewhere, so these come from libgphoto2.
+- The **button values** for RemoteReleaseOn/Off: 1 = half press, 2 = full press, second parameter 0 = with autofocus, 1 = without (bracketing after the first shot, and focus stacking). Canon's code passes values it gets from elsewhere, so these come from libgphoto2.
+- ** x9155 DriveLens** (focus stacking): one parameter,  x0001– x0003 = near (small, medium, large step),  x8001– x8003 = far; it works only while live view runs. From libgphoto2 (`PTP_OC_CANON_EOS_DriveLens`, its `manualfocusdrive` setting); ShutterCtrl offers focus stacking only when the camera lists  x9155 among its operations.
 - The **value encodings**: Canon's Av/Tv/ISO/exposure codes, the battery values (0 low, 1 half, 2 full, 4 three quarters, 5 a quarter) and the GetEvent record layout (`0xC189` property changed, `0xC18A` allowed values, `0xC181`/`0xC1A7` new picture) follow libgphoto2.
 - **`0xD116` as the model id**, and the `.FIR` header's first 4 bytes as the model id.
 - The GetViewFinderData parameters `0x00200000, 0, 0` (Canon's code uses 3 parameters; the values follow libgphoto2).
@@ -152,7 +156,7 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 - Each release APK has a signed **build provenance attestation**. With the [GitHub CLI](https://cli.github.com/), `gh attestation verify ShutterCtrl-vX.Y.Z.apk -R VoidedKN0X/ShutterCtrl` proves it was built by this repo's workflow from the tagged commit.
 - The signing-certificate fingerprint above stays the same for every release.
 
-**Permissions.** ShutterCtrl has **no location permission**, can't scan or change Wi-Fi networks and has no Bluetooth access.
+**Permissions.** ShutterCtrl can't scan or change Wi-Fi networks and has no Bluetooth access. It asks for location only if you turn on **Geotag downloads**.
 
 | Permission | What ShutterCtrl uses it for |
 | --- | --- |
@@ -161,6 +165,7 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 | Allow Wi-Fi multicast reception | Hearing cameras answer a search. Held only while you tap Search. |
 | Foreground service, and foreground service (connected device) | The intervalometer keeps shooting with the screen off. Only while a series runs. |
 | Notifications | The "Intervalometer running" notification with Stop. |
+| Precise and approximate location (optional) | Only for **Settings > Downloads > Add the phone's location**, which is off until you turn it on; Android asks then. While it's on and ShutterCtrl is open, the phone's position is noted (kept on the phone for 24 hours) and written into downloaded JPEGs. Turning it off deletes the notes. Allowing only approximate location works too, less precisely. |
 | Use biometric hardware | Optional fingerprint unlock for the app lock. |
 | Hide other apps' floating windows over the PIN screen | While the lock or PIN screen is showing, other apps' floating windows are hidden over it. |
 | App-internal broadcasts (`com.vknxworks.shutterctrl.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`) | Added by AndroidX so that only ShutterCtrl itself can send to its own internal receivers. |
@@ -192,7 +197,7 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - **On the camera's own Wi-Fi,** ShutterCtrl binds its sockets to that Wi-Fi network, so the traffic goes to the camera and never out over mobile data.
 - **Pairing identity:** the camera remembers this phone by a random 16-byte identity made by ShutterCtrl, and the name "ShutterCtrl". No phone name, account or serial number is sent. You can reset the identity in Settings.
 - ShutterCtrl doesn't read or keep the camera's serial number.
-- **No location:** ShutterCtrl has no location permission and doesn't tag photos.
+- **Location only if you ask for it:** with **Add the phone's location** off (the default), ShutterCtrl doesn't read your location and doesn't tag photos. When you turn it on, it notes the phone's position while it's open, keeps those notes on the phone for 24 hours (in its private storage, left out of backups) and writes the matching position into downloaded JPEGs. Nothing is sent anywhere. Turning the option off deletes the notes.
 - Downloads go to **Pictures/ShutterCtrl** in your library (RAW types the phone's media library doesn't know go to **Download/ShutterCtrl**). ShutterCtrl keeps no copies of its own; thumbnails are only held in memory while connected.
 - Firmware files are read from where you pick them and sent to the camera; ShutterCtrl doesn't copy them.
 - Settings are in ShutterCtrl's private storage. Android backups don't include them, and ShutterCtrl is left out of Android's cloud backup and its phone-to-phone transfer.

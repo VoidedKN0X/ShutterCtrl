@@ -172,4 +172,44 @@
     <string name="reset_identity_body">ShutterCtrl disconnects and makes a new identity. Each camera will ask you to accept this phone again.</string>
     <string name="reset_identity_confirm">Reset</string>
     <string name="reset_identity_done">New identity made</string>
+
+    <!-- Bracketing and focus stacking -->
+    <string name="series_progress">%1$d of %2$d shots</string>
+    <string name="series_failed">Stopped after %1$d shots: the camera didn\'t accept a command.</string>
+    <string name="series_done">Done: %1$d shots taken.</string>
+    <string name="series_ok">OK</string>
+    <string name="group_bracket">Exposure bracketing</string>
+    <string name="bracket_footer">Shots around the current exposure, for HDR or to be safe in tricky light. Autofocus runs on the first shot only. The camera\'s starting value is put back afterwards.</string>
+    <string name="bracket_shots">Shots</string>
+    <string name="bracket_step">Step</string>
+    <string name="bracket_plan_ev">Exposure compensation: %1$s</string>
+    <string name="bracket_plan_tv">Shutter speed (stops brighter or darker): %1$s</string>
+    <string name="bracket_clipped">The camera\'s range ends before some steps; those shots use its nearest value.</string>
+    <string name="bracket_start">Shoot %1$d brackets</string>
+    <string name="bracket_no_range">The camera allows no other values right now</string>
+    <string name="group_stack">Focus stacking</string>
+    <string name="stack_footer">Set the lens switch to AF and focus on the nearest part you want sharp (Near and Far move the focus by one step). ShutterCtrl then takes a shot, moves the focus, and repeats, without autofocus. Merge the photos in a focus-stacking program afterwards. Leaving live view stops the stack.</string>
+    <string name="stack_shots">Shots</string>
+    <string name="stack_step">Focus step size</string>
+    <string name="stack_step_small">Small</string>
+    <string name="stack_step_medium">Medium</string>
+    <string name="stack_step_large">Large</string>
+    <string name="stack_drives">Steps between shots</string>
+    <string name="stack_direction">Direction</string>
+    <string name="stack_toward_far">Towards far</string>
+    <string name="stack_toward_near">Towards near</string>
+    <string name="stack_nudge_near">Near</string>
+    <string name="stack_nudge_far">Far</string>
+    <string name="stack_drive_failed">The camera didn\'t move the focus. Is the lens set to AF?</string>
+    <string name="stack_summary">%1$d shots, %2$d focus steps in all</string>
+    <string name="stack_start">Shoot a stack of %1$d</string>
+
+    <!-- Geotagging -->
+    <string name="group_downloads">Downloads</string>
+    <string name="geotag">Add the phone\'s location</string>
+    <string name="geotag_sub">Downloaded JPEG photos get where the phone was when they were taken</string>
+    <string name="geotag_sub_no_permission">Location isn\'t allowed for ShutterCtrl any more. Allow it in Android\'s app settings, or turn this off.</string>
+    <string name="geotag_sub_approximate">Only approximate location is allowed, so positions can be off by a kilometre or more</string>
+    <string name="geotag_footer">Off until you turn it on. While it\'s on and ShutterCtrl is open, the phone notes its position (kept on this phone for 24 hours, never sent anywhere). A downloaded JPEG gets the position closest to its capture time, within 10 minutes, unless the camera already added one. RAW files are left as they are. Turning this off deletes the notes. The camera\'s clock should be right.</string>
+    <string name="geotag_denied">Location wasn\'t allowed, so geotagging stays off</string>
 </resources>

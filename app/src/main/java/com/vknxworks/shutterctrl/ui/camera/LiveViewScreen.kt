@@ -53,7 +53,11 @@ fun LiveViewScreen() {
 
     DisposableEffect(Unit) {
         session.startLiveView()
-        onDispose { c.appScope.launch { session.stopLiveView() } }
+        onDispose {
+            // Focus stacking needs live view: leaving it stops a running stack.
+            if (session.series.value?.kind == com.vknxworks.shutterctrl.camera.CameraSession.Series.Kind.FOCUS_STACK) session.stopSeries()
+            c.appScope.launch { session.stopLiveView() }
+        }
     }
     val view = LocalView.current
     DisposableEffect(settings.keepScreenOn) {
@@ -83,6 +87,7 @@ fun LiveViewScreen() {
             }
             ExposureRow(Modifier.padding(top = 8.dp))
             ShutterButtons()
+            FocusStackGroup()
             Text(stringResource(R.string.live_view_note), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         }
     }

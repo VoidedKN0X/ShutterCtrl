@@ -1,6 +1,9 @@
 package com.vknxworks.shutterctrl.ui.settings
 
+import android.Manifest
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -12,6 +15,7 @@ import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Timer
@@ -63,6 +67,7 @@ fun SettingsScreen() {
                 SelfTimerRow()
                 GroupSwitch(stringResource(R.string.keep_screen_on), stringResource(R.string.keep_screen_on_sub), settings.keepScreenOn, Icons.Outlined.LightMode) { on -> set { it.copy(keepScreenOn = on) } }
             }
+            GeotagGroup(settings)
             Group(stringResource(R.string.group_connection), footer = stringResource(R.string.connection_footer)) {
                 GroupRow(
                     stringResource(R.string.reset_identity),
@@ -88,6 +93,40 @@ fun SettingsScreen() {
         }
     }
 }
+/**
+ * Geotag downloads (off until turned on). The location permission is asked for only when it's turned on;
+ * if it's refused, the option stays off.
+ */
+@Composable
+private fun GeotagGroup(settings: AppSettings) {
+    val context = LocalContext.current
+    val c = context.container
+    val scope = rememberCoroutineScope()
+    var permitted by remember { mutableStateOf(c.geo.permitted) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        permitted = c.geo.permitted
+        c.geo.permissionChanged()
+        if (result.values.any { it }) scope.launch { c.settings.update { it.copy(geotag = true) } }
+        else Toast.makeText(context, context.getString(R.string.geotag_denied), Toast.LENGTH_LONG).show()
+    }
+    val sub = when {
+        settings.geotag && !permitted -> stringResource(R.string.geotag_sub_no_permission)
+        settings.geotag && c.geo.approximateOnly -> stringResource(R.string.geotag_sub_approximate)
+        else -> stringResource(R.string.geotag_sub)
+    }
+    Group(stringResource(R.string.group_downloads), footer = stringResource(R.string.geotag_footer)) {
+        GroupSwitch(stringResource(R.string.geotag), sub, settings.geotag, Icons.Outlined.LocationOn) { on ->
+            if (!on) {
+                scope.launch { c.settings.update { it.copy(geotag = false) } }
+            } else if (c.geo.permitted) {
+                scope.launch { c.settings.update { it.copy(geotag = true) } }
+            } else {
+                ask.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+        }
+    }
+}
+
 /** Privacy and security: the shared Ctrl series app lock, then hiding ShutterCtrl in screenshots. */
 @Composable
 private fun PrivacyAndSecurityGroup(settings: AppSettings) {

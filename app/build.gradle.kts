@@ -22,8 +22,8 @@ android {
         minSdk = 35
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 3
-        versionName = "0.2.1"
+        versionCode = 4
+        versionName = "0.3.0"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
     }
@@ -79,6 +79,11 @@ android {
         includeInBundle = false
     }
 
+    testOptions {
+        // The EXIF tests run androidx.exifinterface on the JVM; android.util.Log calls there do nothing.
+        unitTests.isReturnDefaultValues = true
+    }
+
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -127,6 +132,8 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    // Geotagging downloads: GPS tags written into the JPEG on the phone (AndroidX, Apache-2.0).
+    implementation(libs.androidx.exifinterface)
 
     // Unit tests for the PTP/IP framing and parsers (JVM only, not in the APK).
     testImplementation(libs.junit)
