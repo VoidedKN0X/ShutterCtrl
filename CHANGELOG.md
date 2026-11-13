@@ -4,6 +4,21 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.2.1 (2026-11-13)
+
+A security and maintenance release. Nothing changes in how you use ShutterCtrl.
+
+### Security
+
+- **Stricter checks on what a camera sends.** A camera (or a device on the network pretending to be one) that sends broken or oversized answers now gets a clean "connection lost" instead of possibly confusing ShutterCtrl or using up the phone's memory. Answers that are kept in memory (camera details, the card list, thumbnails, live view frames) are limited to 32 MB; photo and video downloads still stream straight to your library at any size.
+- **File names from the camera are cleaned before saving.** A name with folder parts or odd characters can't make a download land anywhere but Pictures/ShutterCtrl (or Movies or Download/ShutterCtrl).
+- The build tool download is now checked against its published checksum.
+
+### Performance
+
+- Updated Jetpack Compose, AndroidX and Kotlin libraries to their current versions.
+- Release builds drop debug logging.
+
 ## v0.2.0 (2026-11-12)
 
 ShutterCtrl now also works over a USB cable. Everything you can do over Wi-Fi works the same way on the cable. USB hasn't been tested with a real camera yet; please report your camera model and what works.

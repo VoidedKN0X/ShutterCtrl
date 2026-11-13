@@ -18,7 +18,7 @@ class Saver(private val context: Context) {
     fun begin(info: ObjectInfo): Pending {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, info.fileName)
+            put(MediaStore.MediaColumns.DISPLAY_NAME, info.safeFileName)
             put(MediaStore.MediaColumns.MIME_TYPE, info.mime)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }

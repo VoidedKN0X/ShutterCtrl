@@ -43,6 +43,13 @@ private fun ByteBuffer.u16Array(): IntArray {
 
 fun leBuffer(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
+/** Parses a dataset from the camera; one that ends early is a [PtpException], like any other broken answer. */
+private inline fun <T> dataset(name: String, parse: () -> T): T = try {
+    parse()
+} catch (e: BufferUnderflowException) {
+    throw PtpException("The camera sent a broken $name")
+}
+
 data class DeviceInfo(
     val vendorExtensionId: Long,
     val vendorExtensionDesc: String,
@@ -56,7 +63,7 @@ data class DeviceInfo(
     fun supports(op: Int) = op in operations
 
     companion object {
-        fun parse(bytes: ByteArray): DeviceInfo {
+        fun parse(bytes: ByteArray): DeviceInfo = dataset("DeviceInfo") {
             val b = leBuffer(bytes)
             b.u16() // standard version
             val vendorId = b.u32()
@@ -72,7 +79,7 @@ data class DeviceInfo(
             val model = b.ptpString()
             val version = b.ptpString()
             // The serial number follows; ShutterCtrl doesn't read or keep it.
-            return DeviceInfo(vendorId, vendorDesc, ops, events, props, manufacturer, model, version)
+            DeviceInfo(vendorId, vendorDesc, ops, events, props, manufacturer, model, version)
         }
     }
 }
@@ -109,7 +116,18 @@ data class ObjectInfo(
             else -> "application/octet-stream"
         }
 
+    /** [fileName] made safe to save: the camera's name is untrusted, so no folders, control or reserved characters. */
+    val safeFileName: String get() = safeName(fileName, handle)
+
     companion object {
+        fun safeName(name: String, handle: Int): String {
+            val base = name.substringAfterLast('/').substringAfterLast('\\')
+                .filter { !it.isISOControl() && it !in "\"*:<>?|" }
+                .trim().trimStart('.')
+                .take(200)
+            return base.ifBlank { "ShutterCtrl_%08X".format(handle) }
+        }
+
         /** ObjectInfo dataset for SendObjectInfo: a plain file (format 0x3000) of [size] bytes named [fileName]. */
         fun forSend(storageId: Int, size: Long, fileName: String): ByteArray {
             val name = PtpStrings.encode(fileName)
@@ -123,7 +141,7 @@ data class ObjectInfo(
             return b.array()
         }
 
-        fun parse(handle: Int, bytes: ByteArray): ObjectInfo {
+        fun parse(handle: Int, bytes: ByteArray): ObjectInfo = dataset("ObjectInfo") {
             val b = leBuffer(bytes)
             val storage = b.int
             val format = b.u16()
@@ -141,13 +159,14 @@ data class ObjectInfo(
             b.u32() // sequence number
             val name = b.ptpString()
             val date = if (b.hasRemaining()) b.ptpString() else ""
-            return ObjectInfo(handle, storage, format, size, thumbFormat, thumbSize, w, h, parent, name, date)
+            ObjectInfo(handle, storage, format, size, thumbFormat, thumbSize, w, h, parent, name, date)
         }
     }
 }
 
 /** u32 count, then u32 values (GetStorageIDs, GetObjectHandles). */
 fun parseU32Array(bytes: ByteArray): IntArray {
+    if (bytes.size < 4) throw PtpException("Bad array (${bytes.size} bytes)")
     val b = leBuffer(bytes)
     val n = b.int
     if (n < 0 || n > b.remaining() / 4) throw PtpException("Bad array length $n")
@@ -175,7 +194,8 @@ object CanonEventParser {
             val b = leBuffer(bytes).position(pos) as ByteBuffer
             val size = b.int
             val type = b.int
-            if (size < 8 || pos + size > bytes.size) break
+            // size > bytes.size - pos rather than pos + size > bytes.size: a huge size must not wrap around.
+            if (size < 8 || size > bytes.size - pos) break
             if (size == 8 && type == 0) break
             val bodyLen = size - 8
             when (type) {
@@ -208,7 +228,7 @@ object ViewFinder {
         while (pos + 8 <= bytes.size) {
             val b = leBuffer(bytes).position(pos) as ByteBuffer
             val len = b.int
-            if (len < 8 || pos + len > bytes.size) break
+            if (len < 8 || len > bytes.size - pos) break
             if (len > 10 && bytes[pos + 8] == 0xFF.toByte() && bytes[pos + 9] == 0xD8.toByte()) {
                 return bytes.copyOfRange(pos + 8, pos + len)
             }

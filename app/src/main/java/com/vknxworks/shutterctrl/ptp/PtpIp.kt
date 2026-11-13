@@ -95,7 +95,13 @@ object PtpIp {
 
     class InitAck(val connectionNumber: Int, val guid: ByteArray, val name: String)
 
+    /** A payload shorter than its fixed fields is a broken stream, never an index error. */
+    private fun need(payload: ByteArray, n: Int, what: String) {
+        if (payload.size < n) throw PtpException("Short PTP/IP $what packet (${payload.size} bytes)")
+    }
+
     fun parseInitAck(payload: ByteArray): InitAck {
+        need(payload, 20, "Init Command Ack")
         val bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
         val conn = bb.int
         val guid = ByteArray(16).also { bb.get(it) }
@@ -107,6 +113,7 @@ object PtpIp {
     class Response(val code: Int, val transactionId: Int, val params: IntArray)
 
     fun parseResponse(payload: ByteArray): Response {
+        need(payload, 6, "response/event")
         val bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
         val code = bb.short.toInt() and 0xFFFF
         val tid = bb.int
@@ -120,6 +127,7 @@ object PtpIp {
     class StartData(val transactionId: Int, val totalLength: Long)
 
     fun parseStartData(payload: ByteArray): StartData {
+        need(payload, 12, "Start Data")
         val bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
         return StartData(bb.int, bb.long)
     }

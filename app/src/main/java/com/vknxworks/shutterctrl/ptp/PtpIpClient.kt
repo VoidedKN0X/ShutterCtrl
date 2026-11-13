@@ -112,17 +112,25 @@ class PtpIpClient(
             var total = -1L
             var received = 0L
             while (true) {
-                val p = PtpIp.read(cmdIn)
+                val p = broken { PtpIp.read(cmdIn) }
                 when (p.type) {
-                    PtpIp.START_DATA -> total = PtpIp.parseStartData(p.payload).totalLength
+                    PtpIp.START_DATA -> total = broken { PtpIp.parseStartData(p.payload) }.totalLength
                     PtpIp.DATA, PtpIp.END_DATA -> {
                         val len = p.payload.size - 4
-                        if (len > 0) sink(p.payload, 4, len)
+                        if (len > 0) {
+                            try {
+                                sink(p.payload, 4, len)
+                            } catch (t: Throwable) {
+                                // The rest of this data is still on its way: the stream can't be used any more.
+                                fail(t)
+                                throw t
+                            }
+                        }
                         received += len.coerceAtLeast(0)
                         progress?.invoke(received, total)
                     }
                     PtpIp.OPERATION_RESPONSE -> {
-                        val r = PtpIp.parseResponse(p.payload)
+                        val r = broken { PtpIp.parseResponse(p.payload) }
                         if (r.transactionId != tid) continue
                         return PtpResult(r.code, r.params, null)
                     }
@@ -170,10 +178,10 @@ class PtpIpClient(
             cmdOut.flush()
             progress?.invoke(sent, total)
             while (true) {
-                val p = PtpIp.read(cmdIn)
+                val p = broken { PtpIp.read(cmdIn) }
                 when (p.type) {
                     PtpIp.OPERATION_RESPONSE -> {
-                        val r = PtpIp.parseResponse(p.payload)
+                        val r = broken { PtpIp.parseResponse(p.payload) }
                         if (r.transactionId == tid) return PtpResult(r.code, r.params, null)
                     }
                     PtpIp.PROBE_REQUEST -> { cmdOut.write(PtpIp.probeResponse()); cmdOut.flush() }
@@ -184,6 +192,14 @@ class PtpIpClient(
         } catch (t: java.io.IOException) {
             fail(t); throw PtpException("The connection to the camera was lost")
         }
+    }
+
+    /** A packet that can't be parsed means the stream is out of step: close the connection, then throw. */
+    private inline fun <T> broken(parse: () -> T): T = try {
+        parse()
+    } catch (e: PtpException) {
+        fail(e)
+        throw e
     }
 
     private fun fail(t: Throwable?) {

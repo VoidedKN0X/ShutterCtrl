@@ -42,11 +42,23 @@ interface PtpTransport : Closeable {
      */
     fun transactStreamOut(op: Int, params: IntArray, total: Long, source: InputStream, progress: ((Long, Long) -> Unit)?): PtpResult
 
-    /** A transaction with optional data out; incoming data is collected in memory. */
+    /**
+     * A transaction with optional data out; incoming data is collected in memory, up to [MAX_IN_MEMORY]
+     * (datasets, events, thumbnails and live view frames are far smaller; files are streamed with [transactTo]).
+     */
     fun transact(op: Int, params: IntArray = IntArray(0), dataOut: ByteArray? = null): PtpResult {
         val buf = ByteArrayOutputStream()
         var got = false
-        val r = transactTo(op, params, dataOut, { b, off, len -> got = true; buf.write(b, off, len) }, null)
+        val r = transactTo(op, params, dataOut, { b, off, len ->
+            got = true
+            if (len > MAX_IN_MEMORY - buf.size()) throw PtpException("The camera sent more data than expected")
+            buf.write(b, off, len)
+        }, null)
         return PtpResult(r.code, r.params, if (got) buf.toByteArray() else null)
+    }
+
+    companion object {
+        /** Largest answer kept in memory by [transact]. */
+        const val MAX_IN_MEMORY = 32 * 1024 * 1024
     }
 }
