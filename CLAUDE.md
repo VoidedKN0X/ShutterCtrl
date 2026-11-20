@@ -34,6 +34,15 @@ Canon camera remote in the VKNXWorks Ctrl series (replaces Canon Camera Connect 
 - Not encrypted, on purpose: the settings DataStore (`last_host`, the PTP/IP `guid`, toggles), which the connection code reads; the app lock's own `app_lock_vault` preferences are already protected and must not be touched. Downloads are in the shared media library.
 - `SealedFileTest` and `LocationLogFileTest` cover the format, the migration step, the key rules and the log file (`./gradlew :app:testDebugUnitTest`; CI only runs `assembleRelease`, so run them locally).
 
+## Build and signing (CI)
+
+`.github/workflows/build.yml` has four jobs: `version` (is this a release?), `build` (Gradle, **no secrets**, `UNSIGNED_RELEASE=true` gives `app-release-unsigned.apk`; runs every check), `sign` (no checkout, no Gradle: `zipalign` + `apksigner` with the release key, then checks the signer against `EXPECTED_CERT_SHA256` and that the APK's contents didn't change) and `release` (attestation, release notes, publish).
+
+- Never give the `build` job a secret, and never run Gradle or check out the repo in `sign`. New build checks (tests, lint, APK checks) go in `build`.
+- `EXPECTED_CERT_SHA256` in `build.yml` must match the fingerprint in `SECURITY.md`; the build fails if it doesn't.
+- No Gradle cache in any workflow (`cache-disabled: true`): a cache saved by a failed run used to break every later build.
+- `settings.gradle.kts` lists only `google()` and `mavenCentral()` for plugins, not `gradlePluginPortal()`: the portal serves different files for the Kotlin plugin markers, which made dependency verification fail whenever Maven Central had a hiccup. Don't add it back unfiltered (see the comment in that file).
+
 ## Releasing
 
 - A release is published only when `versionName` in `app/build.gradle.kts` is bumped. Bump `versionCode` by 1 at the same time.
