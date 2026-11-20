@@ -4,6 +4,22 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone, and CI doesn't run the unit tests that were added. It has also never been tried with a real Canon camera.
+
+### Privacy
+
+- **The geotagging location notes are now encrypted on the phone.** With **Add the phone's location** on, ShutterCtrl keeps the phone's positions of the last 24 hours in a private file (`location-log.csv`). That file is now sealed with AES-256-GCM. Its key (32 random bytes, in `data.key` in ShutterCtrl's private storage) is itself locked with a key in the phone's secure hardware (Android Keystore, StrongBox when the phone has it) that can't be copied off the phone. The key is only made the first time notes are saved, so nothing changes if you never turned geotagging on. This protects the notes in files copied off the phone; it doesn't depend on the app lock and doesn't protect against someone who can use the unlocked phone or a compromised running app.
+- **Existing notes are converted the first time they're read** (when ShutterCtrl comes to the screen with geotagging on): the old file is read as before, an encrypted copy is written next to it, read back and compared, and only then put in its place in one step. If any of that fails, the old file stays in use and it's tried again at the next start. ShutterCtrl reads both kinds of file from now on.
+- **If the key can't be made or used** (the secure hardware fails), the notes are kept as an ordinary private file, exactly as before. **If encrypted notes can't be opened** (the key is gone, or the file is damaged), they're deleted and new notes start: at most the last 24 hours of positions are lost, so photos taken before that moment and downloaded later aren't geotagged. There's no message for this, because the notes are a short-lived working file. An existing key file is never replaced.
+- **An older ShutterCtrl can't read the encrypted notes.** After going back to an older version, it would see no usable notes and start over (again at most 24 hours of positions). There's nothing to export: positions already written into downloaded photos are in those photos.
+- **Deliberately not encrypted:** the settings, including the last camera address (a local-network address) and this phone's pairing identity, because the connection code reads them and a change there could not be tried on a real camera; the app lock's own data, which is already protected; downloaded photos, which are in your photo library and not in ShutterCtrl's storage. Turning geotagging off still deletes the notes.
+
+### Changed
+
+- **The saved location notes are read in the background** instead of on the main thread when ShutterCtrl comes to the screen. They're available a moment later than before, so a photo downloaded in the first instant after opening the app could miss a position from an earlier session.
+
 ## v0.3.1 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It has also never been tried with a real Canon camera.

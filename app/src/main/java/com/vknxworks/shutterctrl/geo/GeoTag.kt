@@ -68,6 +68,17 @@ class LocationTrack(
         text.lineSequence().mapNotNull { Fix.decode(it.trim()) }.sortedBy { it.time }.forEach { fixes += it }
         prune(now)
     }
+
+    /** Adds the fixes saved in [text] to the ones already here (the saved log is read in the background). */
+    @Synchronized
+    fun merge(text: String, now: Long) {
+        val saved = text.lineSequence().mapNotNull { Fix.decode(it.trim()) }.toList()
+        if (saved.isNotEmpty()) {
+            fixes.addAll(saved)
+            fixes.sortBy { it.time }
+        }
+        prune(now)
+    }
 }
 
 /** Writing the phone's position into a downloaded photo's EXIF (androidx.exifinterface; JPEG files). */

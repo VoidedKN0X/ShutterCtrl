@@ -198,9 +198,10 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - **Pairing identity:** the camera remembers this phone by a random 16-byte identity made by ShutterCtrl, and the name "ShutterCtrl". No phone name, account or serial number is sent. You can reset the identity in Settings.
 - ShutterCtrl doesn't read or keep the camera's serial number.
 - **Location only if you ask for it:** with **Add the phone's location** off (the default), ShutterCtrl doesn't read your location and doesn't tag photos. When you turn it on, it notes the phone's position while it's open, keeps those notes on the phone for 24 hours (in its private storage, left out of backups) and writes the matching position into downloaded JPEGs. Nothing is sent anywhere. Turning the option off deletes the notes.
+- **The location notes are encrypted on the phone** (AES-256-GCM). Their key is made on the phone and locked with a key in the phone's secure hardware (Android Keystore), so the notes can't be read from files copied off the phone. This doesn't depend on the app lock and doesn't protect against someone who can use the unlocked phone. If the phone can't make or use that key, the notes are kept as an ordinary private file, as in earlier versions. Positions written into your downloaded photos are part of those photos in your library and aren't encrypted by ShutterCtrl.
 - Downloads go to **Pictures/ShutterCtrl** in your library (RAW types the phone's media library doesn't know go to **Download/ShutterCtrl**). ShutterCtrl keeps no copies of its own; thumbnails are only held in memory while connected.
 - Firmware files are read from where you pick them and sent to the camera; ShutterCtrl doesn't copy them.
-- Settings are in ShutterCtrl's private storage. Android backups don't include them, and ShutterCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
+- Settings (including the last camera address and the pairing identity) are in ShutterCtrl's private storage, not encrypted. Android backups don't include them, and ShutterCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
 - The Support, Report a bug, Source code and Licence links on the You page open in your browser, only when you tap them.
 
 ## How ShutterCtrl is made
