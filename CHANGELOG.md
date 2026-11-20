@@ -4,9 +4,9 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## v0.3.1 (2026-11-20)
 
-Not released yet: these changes are built but have no version number. When the next version is published, move them under its heading. Like the rest of ShutterCtrl, they have not been tried with a real camera yet. Nothing in what ShutterCtrl sends to the camera has changed.
+Built and checked by CI only: nothing in this release had been run on a phone when it was published. It has also never been tried with a real Canon camera.
 
 ### Fixed
 
