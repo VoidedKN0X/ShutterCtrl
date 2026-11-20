@@ -34,6 +34,13 @@ Canon camera remote in the VKNXWorks Ctrl series (replaces Canon Camera Connect 
 - Not encrypted, on purpose: the settings DataStore (`last_host`, the PTP/IP `guid`, toggles), which the connection code reads; the app lock's own `app_lock_vault` preferences are already protected and must not be touched. Downloads are in the shared media library.
 - `SealedFileTest` and `LocationLogFileTest` cover the format, the migration step, the key rules and the log file (`./gradlew :app:testDebugUnitTest`; CI only runs `assembleRelease`, so run them locally).
 
+## Build toolchain
+
+- AGP 9.5.1, Gradle 9.9.2, Kotlin 2.4.21, Compose BOM 2026.09.00, `compileSdk` 37 (Compose 1.12 needs it), `minSdk` 35, `targetSdk` 36. All versions are in `gradle/libs.versions.toml`.
+- AGP 9 has built-in Kotlin: there is no `org.jetbrains.kotlin.android` plugin any more. The Kotlin version is pinned by the `kotlin-gradle-plugin` classpath entry in the root `build.gradle.kts`; the Compose and serialization compiler plugins use the same `kotlin` version. Don't re-add the Kotlin Android plugin.
+- AGP 9's R8 is stricter (`-keep class X` without a member block no longer keeps the constructor; resources are shrunk together with code). Keep rules in `proguard-rules.pro` must name the members they need, and resources must be referenced through `R`, never by name.
+- Any version change here needs new checksums in `gradle/verification-metadata.xml`: push the change, start the `verification-metadata.yml` workflow on `main`, and commit the file it prints, unchanged. Never write or edit that file by hand and never make verification lenient.
+
 ## Build and signing (CI)
 
 `.github/workflows/build.yml` has four jobs: `version` (is this a release?), `build` (Gradle, **no secrets**, `UNSIGNED_RELEASE=true` gives `app-release-unsigned.apk`; runs every check), `sign` (no checkout, no Gradle: `zipalign` + `apksigner` with the release key, then checks the signer against `EXPECTED_CERT_SHA256` and that the APK's contents didn't change) and `release` (attestation, release notes, publish).
