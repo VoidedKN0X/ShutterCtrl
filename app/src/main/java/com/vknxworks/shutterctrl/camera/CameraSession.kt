@@ -371,7 +371,14 @@ class CameraSession(
         if (info.handle in noThumb || client == null || exclusive) return null
         val i = this.info ?: return null
         if (!i.supports(Op.GET_THUMB) || info.thumbSize == 0L) return null
-        val r = runCatching { call { it.transact(Op.GET_THUMB, intArrayOf(info.handle)) } }.getOrNull()
+        val r = try {
+            call { it.transact(Op.GET_THUMB, intArrayOf(info.handle)) }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // The tile scrolled away before its turn: not "this file has no thumbnail", so it's asked again later.
+            throw e
+        } catch (_: Throwable) {
+            null
+        }
         val data = r?.data
         if (r == null || r.code != Rc.OK || data == null || data.isEmpty()) {
             noThumb += info.handle

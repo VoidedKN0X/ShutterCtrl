@@ -1,5 +1,6 @@
 package com.vknxworks.shutterctrl.ui.camera
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,6 +21,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,9 +69,16 @@ fun LiveViewScreen() {
     }
     LaunchedEffect(link) { if (link !is Link.Connected) nav.back() }
 
-    val bitmap by produceState<ImageBitmap?>(null, frame) {
-        val f = frame ?: return@produceState
-        value = withContext(Dispatchers.Default) { runCatching { BitmapFactory.decodeByteArray(f, 0, f.size)?.asImageBitmap() }.getOrNull() } ?: value
+    // One frame is decoded at a time, into a few bitmaps used in turn instead of a new one per frame. A frame that
+    // arrives while the last one is still being decoded is skipped; a frame that can't be decoded keeps the last picture.
+    val frames = remember { LiveFrames() }
+    val bitmap by produceState<ImageBitmap?>(null) {
+        snapshotFlow { frame }.collect { f ->
+            if (f != null) {
+                val b = withContext(Dispatchers.Default) { frames.decode(f) }
+                if (b != null) value = b.asImageBitmap()
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -90,5 +100,36 @@ fun LiveViewScreen() {
             FocusStackGroup()
             Text(stringResource(R.string.live_view_note), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         }
+    }
+}
+
+/**
+ * Decodes live-view JPEG frames into [BUFFERS] bitmaps used in turn, so about 15 frames a second don't each need a
+ * new bitmap. The bitmap on screen is never the one being written: it comes up for reuse only after the frames after
+ * it have been decoded and shown. A frame of another size, or anything else Android can't decode into an old bitmap,
+ * gets a fresh one. Not thread-safe: one frame at a time.
+ */
+private class LiveFrames {
+    private val buffers = arrayOfNulls<Bitmap>(BUFFERS)
+    private var next = 0
+
+    fun decode(jpeg: ByteArray): Bitmap? {
+        val out = decodeInto(jpeg, buffers[next]) ?: decodeInto(jpeg, null) ?: return null
+        buffers[next] = out
+        next = (next + 1) % BUFFERS
+        return out
+    }
+
+    private fun decodeInto(jpeg: ByteArray, reuse: Bitmap?): Bitmap? = runCatching {
+        val opts = BitmapFactory.Options().apply {
+            inMutable = true
+            inSampleSize = 1
+            inBitmap = reuse
+        }
+        BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, opts)
+    }.getOrNull()
+
+    private companion object {
+        const val BUFFERS = 3
     }
 }

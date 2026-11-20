@@ -4,6 +4,18 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not released yet: these changes are built but have no version number. When the next version is published, move them under its heading. Like the rest of ShutterCtrl, they have not been tried with a real camera yet. Nothing in what ShutterCtrl sends to the camera has changed.
+
+### Fixed
+
+- **Card thumbnails that stayed empty after a fast scroll.** When a photo scrolled off the screen before its thumbnail had been fetched, ShutterCtrl wrongly noted it as "has no thumbnail" and never asked the camera for it again until you reconnected. It's now simply fetched the next time the photo is on screen. A file the camera really has no thumbnail for is still asked for only once.
+
+### Smoother
+
+- **Live view no longer makes a new picture in memory for every frame.** Frames (about 15 a second) are now decoded into three bitmaps used in turn, which avoids the short stutters Android's memory clean-up could cause. One frame is decoded at a time; a frame that arrives while the previous one is still being decoded is skipped, and a frame that can't be decoded leaves the last picture on screen, as before.
+
 ## v0.3.0 (2026-11-13)
 
 ### New
