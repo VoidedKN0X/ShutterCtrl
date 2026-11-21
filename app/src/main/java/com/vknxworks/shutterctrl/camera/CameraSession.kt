@@ -616,7 +616,7 @@ class CameraSession(
      * the first shot, so every frame is focused the same), and put the starting value back at the end.
      */
     fun startBracket(plan: BracketPlan) {
-        if (seriesJob?.isActive == true || client == null) return
+        if (seriesJob?.isActive == true || bulbJob?.isActive == true || client == null) return
         val total = plan.shots.size
         _series.value = Series(Series.Kind.BRACKET, 0, total)
         seriesJob = scope.launch {
@@ -647,7 +647,7 @@ class CameraSession(
      * camera doesn't undo the steps. Live view must be running (the caller is the live view screen).
      */
     fun startFocusStack(actions: List<FocusStack.Action>) {
-        if (seriesJob?.isActive == true || client == null) return
+        if (seriesJob?.isActive == true || bulbJob?.isActive == true || client == null) return
         val total = actions.count { it is FocusStack.Action.Shoot }
         _series.value = Series(Series.Kind.FOCUS_STACK, 0, total)
         seriesJob = scope.launch {
