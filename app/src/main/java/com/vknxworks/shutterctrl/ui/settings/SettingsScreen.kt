@@ -76,6 +76,7 @@ fun SettingsScreen() {
                     onClick = { resetAsk = true },
                 )
             }
+            BackupGroup()
             PrivacyAndSecurityGroup(settings)
         }
     }

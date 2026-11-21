@@ -19,6 +19,8 @@ Built and checked by CI only: nothing in this release had been run on a phone or
 - **Delete from the card.** One file (**Delete from the card** in its sheet) or a selection, after a confirmation that says copies on the phone stay. Uses the standard PTP DeleteObject (0x100B), or Canon's own (0x9105, libgphoto2) when the camera lists only that. Shown only when the camera lists one of them.
 - **Resume interrupted downloads.** When a download stops part-way (the Wi-Fi or cable dropped), what arrived is kept, hidden from your library, and **Continue download (45 %)** picks up where it stopped, also after reconnecting. It works with cameras that can send parts of a file, and while ShutterCtrl stays open; an unfinished file Android never sees finished is removed by Android after about a week.
 
+- **Settings export and import.** **Settings > Settings file** saves your shooting, intervalometer, bracketing, focus stacking, bulb, live view and auto-download settings and the camera's last address to a JSON file you choose, and imports one again after listing exactly which settings it changes. Never in the file: this phone's PTP/IP pairing identity, the Bluetooth camera, geotagging (it would turn on location), the app lock and the privacy settings. An imported address is used only if it's on a local network.
+
 ### Permissions
 
 - **Nearby devices (Bluetooth scan and connect), new and optional.** Only for the Bluetooth remote; asked for when you first pair or connect. The scan is declared as never used to work out where you are, so no location is involved. The build check's list of allowed permissions now includes these two.

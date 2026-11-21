@@ -35,6 +35,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Focus stacking** in live view: a shot, the focus moved a few steps with Canon's DriveLens, the next shot, and so on (5 to 50 shots, small, medium or large steps, towards far or near), without autofocus. Near and Far buttons set the starting point. Shown only on cameras that list DriveLens
 - **Geotag downloads** (off until you turn it on): downloaded JPEG photos get the phone's position at the time they were taken, from a short location log kept on the phone while ShutterCtrl is open
 - **Firmware transfer:** send a `.FIR` file you downloaded from Canon's website yourself, with safety checks (see [Firmware updates](#firmware-updates))
+- **Settings export and import:** save your shooting, live view and download settings to a file and use them again later or on another phone. No pairing identity, Bluetooth camera, geotagging, app lock or privacy settings are in it
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
 

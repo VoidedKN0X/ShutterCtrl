@@ -341,4 +341,26 @@
     <string name="delete_failed">%1$d couldn\'t be deleted (the camera refused, or the file is protected)</string>
     <string name="download_resume">Continue download (%1$d %%)</string>
     <string name="download_interrupted">Download stopped at %1$d %%. Tap Download again to continue where it stopped.</string>
+
+    <!-- Settings file -->
+    <string name="backup_title">Settings file</string>
+    <string name="backup_footer">Never in a settings file: this phone\'s pairing identity, the Bluetooth camera, geotagging, the app lock and the privacy settings. Importing one can\'t pair, turn on location or turn the app lock off.</string>
+    <string name="backup_save">Export settings</string>
+    <string name="backup_save_sub">Save your shooting, live view and download settings to a file</string>
+    <string name="backup_restore">Import settings</string>
+    <string name="backup_restore_sub">Use the settings from a ShutterCtrl settings file</string>
+    <string name="backup_saved">Settings exported</string>
+    <string name="backup_save_failed">Couldn\'t save the settings file</string>
+    <string name="backup_not_valid">This isn\'t a ShutterCtrl settings file</string>
+    <string name="backup_too_new">This settings file is from a newer ShutterCtrl. Update ShutterCtrl first.</string>
+    <string name="backup_restore_title">Import settings?</string>
+    <string name="backup_restore_body">The settings file from %1$s changes these settings:\n\n%2$s\n\nPairing, geotagging, the app lock and the privacy settings stay as they are.</string>
+    <string name="backup_nothing_changes">The settings file from %1$s has the same settings you use now. Nothing changes.</string>
+    <string name="backup_restore_confirm">Import</string>
+    <string name="backup_restored">Settings imported</string>
+    <string name="backup_item_last_host">Camera address</string>
+    <string name="backup_item_interval">Intervalometer</string>
+    <string name="backup_item_bracket">Bracketing</string>
+    <string name="backup_item_stack">Focus stacking</string>
+    <string name="ok">OK</string>
 </resources>
