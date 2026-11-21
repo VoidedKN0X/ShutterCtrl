@@ -388,4 +388,6 @@
     <string name="backup_item_bracket">Bracketing</string>
     <string name="backup_item_stack">Focus stacking</string>
     <string name="ok">OK</string>
+    <string name="ctl_ev">Bel.</string>
+    <string name="label_footer_badges">Google-vrij · Zonder telemetrie · arm64</string>
 </resources>

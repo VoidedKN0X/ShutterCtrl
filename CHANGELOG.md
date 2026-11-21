@@ -4,6 +4,12 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Fixed
+
+- **Dutch: two labels were still in English.** The exposure-compensation control on the camera screen now reads "Bel." (belichting) instead of "Exp", and the badge line at the bottom of the You screen reads "Google-vrij · Zonder telemetrie · arm64", as the French and German versions already did.
+
 ## v0.6.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.
