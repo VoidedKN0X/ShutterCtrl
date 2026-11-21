@@ -4,6 +4,12 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Added
+
+- **ShutterCtrl in French and German, following the phone's language.** Every screen, setting and message now also has a French translation (polite "vous", as Android itself uses) and a German one (informal "du", as modern Android apps use). Android picks French or German when your phone is set to that language; otherwise ShutterCtrl stays in English, or Dutch as before. ShutterCtrl now also tells Android which languages it has (English, Dutch, French, German), so you can choose one for ShutterCtrl alone in Android's per-app language setting. Canon's own names (Av, Tv, One Shot, AI Focus, Servo, EOS Utility, Camera Connect), units, folder names and the app name stay as they are.
+
 ## v0.5.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.
