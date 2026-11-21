@@ -436,7 +436,7 @@ class CameraSession(
         val key = partialKey(info)
         val earlier = if (partial != 0) synchronized(partials) { partials.remove(key) } else null
         val pending = earlier?.let { runCatching { saver.resume(it.uri, it.offset) }.getOrNull() } ?: saver.begin(info)
-        var offset = if (pending.uri == earlier?.uri) earlier.offset else 0L
+        var offset = earlier?.takeIf { it.uri == pending.uri }?.offset ?: 0L
         try {
             if (partial != 0) {
                 val chunk = 1024 * 1024
