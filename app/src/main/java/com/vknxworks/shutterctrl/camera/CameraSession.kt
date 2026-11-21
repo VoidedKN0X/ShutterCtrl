@@ -8,6 +8,7 @@ import com.vknxworks.shutterctrl.net.LocalAddress
 import com.vknxworks.shutterctrl.ptp.BracketPlan
 import com.vknxworks.shutterctrl.ptp.CanonData
 import com.vknxworks.shutterctrl.ptp.FocusStack
+import com.vknxworks.shutterctrl.ptp.MovieRecord
 import com.vknxworks.shutterctrl.ptp.CanonEventParser
 import com.vknxworks.shutterctrl.ptp.DeviceInfo
 import com.vknxworks.shutterctrl.ptp.ObjectInfo
@@ -28,7 +29,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -89,6 +92,23 @@ class CameraSession(
 
     private val _liveFrame = MutableStateFlow<ByteArray?>(null)
     val liveFrame: StateFlow<ByteArray?> = _liveFrame
+
+    /** New photos the camera reported while connected (for auto-download), whether or not the Card tab is open. */
+    private val _newObjects = MutableSharedFlow<ObjectInfo>(extraBufferCapacity = 64)
+    val newObjects: SharedFlow<ObjectInfo> = _newObjects
+
+    /** A bulb exposure in progress: seconds in all and seconds left (null when none). */
+    data class Bulb(val total: Int, val left: Int, val error: String? = null, val finished: Boolean = false)
+    private val _bulb = MutableStateFlow<Bulb?>(null)
+    val bulb: StateFlow<Bulb?> = _bulb
+    private var bulbJob: Job? = null
+
+    /**
+     * Downloads that stopped part-way (the connection dropped), by file: where the unfinished file is and how
+     * much of it arrived. Downloading the same file again continues from there. Kept while ShutterCtrl runs.
+     */
+    private class Partial(val uri: Uri, val offset: Long, val total: Long)
+    private val partials = HashMap<String, Partial>()
 
     private val saver = Saver(context)
     private val thumbs = object : LruCache<Int, ByteArray>(12 * 1024 * 1024) {
@@ -277,6 +297,8 @@ class CameraSession(
     private fun teardown() {
         seriesJob?.cancel(); seriesJob = null
         _series.value = null
+        bulbJob?.cancel(); bulbJob = null
+        _bulb.value = null
         pollJob?.cancel(); pollJob = null
         liveJob?.cancel(); liveJob = null
         client?.onClosed = null
@@ -326,10 +348,12 @@ class CameraSession(
         val ev = CanonEventParser.parse(data)
         if (ev.props.isNotEmpty()) _props.update { it + ev.props }
         if (ev.allowed.isNotEmpty()) _allowed.update { it + ev.allowed }
-        if (ev.addedObjects.isNotEmpty() && _card.value.loaded) {
+        if (ev.addedObjects.isNotEmpty()) {
             for (h in ev.addedObjects) {
                 val oi = runCatching { objectInfo(h) }.getOrNull() ?: continue
-                if (!oi.isFolder) _card.update { s -> s.copy(items = listOf(oi) + s.items.filter { it.handle != h }) }
+                if (oi.isFolder) continue
+                if (_card.value.loaded) _card.update { s -> s.copy(items = listOf(oi) + s.items.filter { it.handle != h }) }
+                _newObjects.tryEmit(oi)
             }
         }
     }
@@ -388,20 +412,35 @@ class CameraSession(
         return data
     }
 
-    /** Downloads one file to Pictures/ShutterCtrl; [progress] gets 0..1. */
+    /** Where an interrupted download of [info] stopped (0..1), or null when there is nothing to continue. */
+    fun resumeFraction(info: ObjectInfo): Float? = synchronized(partials) {
+        partials[partialKey(info)]?.let { (it.offset.toFloat() / it.total).coerceIn(0f, 1f) }
+    }
+
+    /** The same file on the card, also after a reconnect (when its handle may differ). */
+    private fun partialKey(info: ObjectInfo) = "${info.fileName}|${info.size}|${info.captureDate}"
+
+    /**
+     * Downloads one file to Pictures/ShutterCtrl; [progress] gets 0..1. When the camera can send parts of a
+     * file and an earlier download of the same file stopped part-way, it continues where that one stopped;
+     * if this one stops part-way too, what arrived is kept (hidden) for the next try.
+     */
     suspend fun download(info: ObjectInfo, progress: (Float) -> Unit): Uri = withContext(Dispatchers.IO) {
         val i = this@CameraSession.info ?: throw PtpException("Not connected")
-        val pending = saver.begin(info)
+        val total = info.size
+        val partial = when {
+            total in 1 until 0xFFFFFFFFL && i.supports(Op.GET_PARTIAL_OBJECT) -> Op.GET_PARTIAL_OBJECT
+            total in 1 until 0xFFFFFFFFL && i.supports(Op.EOS_GET_PARTIAL_OBJECT) -> Op.EOS_GET_PARTIAL_OBJECT
+            else -> 0
+        }
+        val key = partialKey(info)
+        val earlier = if (partial != 0) synchronized(partials) { partials.remove(key) } else null
+        val pending = earlier?.let { runCatching { saver.resume(it.uri, it.offset) }.getOrNull() } ?: saver.begin(info)
+        var offset = if (pending.uri == earlier?.uri) earlier.offset else 0L
         try {
-            val total = info.size
-            val chunk = 1024 * 1024
-            val partial = when {
-                total in 1 until 0xFFFFFFFFL && i.supports(Op.GET_PARTIAL_OBJECT) -> Op.GET_PARTIAL_OBJECT
-                total in 1 until 0xFFFFFFFFL && i.supports(Op.EOS_GET_PARTIAL_OBJECT) -> Op.EOS_GET_PARTIAL_OBJECT
-                else -> 0
-            }
             if (partial != 0) {
-                var offset = 0L
+                val chunk = 1024 * 1024
+                if (offset > 0) progress((offset.toFloat() / total).coerceIn(0f, 1f))
                 while (offset < total) {
                     val n = minOf(chunk.toLong(), total - offset).toInt()
                     var got = 0
@@ -424,10 +463,32 @@ class CameraSession(
             }
             saver.finish(pending) { uri -> geotag(uri, info.mime) }
             pending.uri
-        } catch (e: Exception) {
-            saver.abort(pending)
+        } catch (e: Throwable) {
+            if (partial != 0 && offset > 0 && offset < total && e !is kotlinx.coroutines.CancellationException) {
+                // Keep what arrived (still hidden from the library) so the next try continues from here.
+                if (saver.keep(pending)) synchronized(partials) { partials[key] = Partial(pending.uri, offset, total) } else saver.abort(pending)
+            } else {
+                saver.abort(pending)
+            }
             throw e
         }
+    }
+
+    // ---------- Delete ----------
+
+    /** The camera lists the standard DeleteObject, or Canon's own (libgphoto2). */
+    val canDelete: Boolean get() = info?.let { it.supports(Op.DELETE_OBJECT) || it.supports(Op.EOS_DELETE_OBJECT) } == true
+
+    /** Deletes [obj] from the card. Nothing on the phone is touched. */
+    suspend fun delete(obj: ObjectInfo) {
+        val i = info ?: throw PtpException("Not connected")
+        call { c ->
+            // Standard DeleteObject: handle and object format (0 = any).
+            if (i.supports(Op.DELETE_OBJECT)) c.ok(Op.DELETE_OBJECT, intArrayOf(obj.handle, 0))
+            else c.ok(Op.EOS_DELETE_OBJECT, intArrayOf(obj.handle))
+        }
+        _card.update { st -> st.copy(items = st.items.filter { it.handle != obj.handle }) }
+        thumbs.remove(obj.handle)
     }
 
     // ---------- Shooting ----------
@@ -457,6 +518,74 @@ class CameraSession(
                 runCatching { call { c -> c.transact(Op.EOS_REMOTE_RELEASE_OFF, intArrayOf(1)) } }
             }
         }
+    }
+
+    // ---------- Bulb ----------
+
+    /** The camera can hold the shutter open: Canon's BulbStart/BulbEnd, or the remote release held down. */
+    val canBulb: Boolean get() = info?.let { (it.supports(Op.EOS_BULB_START) && it.supports(Op.EOS_BULB_END)) || it.supports(Op.EOS_REMOTE_RELEASE_ON) } == true
+
+    /**
+     * A bulb exposure of [seconds] (the camera must be set to Bulb). With BulbStart/BulbEnd when the camera
+     * lists them (libgphoto2's "bulb"), otherwise by holding the remote release fully down and letting go
+     * (libgphoto2's "Press Full" and "Release Full"). The shutter is always closed again, also when stopped early.
+     */
+    fun startBulb(seconds: Int) {
+        val i = info ?: return
+        if (bulbJob?.isActive == true || seriesJob?.isActive == true || seconds <= 0) return
+        val ops = i.supports(Op.EOS_BULB_START) && i.supports(Op.EOS_BULB_END)
+        _bulb.value = Bulb(seconds, seconds)
+        bulbJob = scope.launch {
+            var error: String? = null
+            try {
+                if (ops) {
+                    call { c -> c.ok(Op.EOS_BULB_START) }
+                } else {
+                    call { c -> c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(1, 0)) }
+                    delay(250)
+                    call { c -> c.ok(Op.EOS_REMOTE_RELEASE_ON, intArrayOf(2, 0)) }
+                }
+                for (left in seconds downTo 1) {
+                    _bulb.value = Bulb(seconds, left)
+                    delay(1000)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = e.message.orEmpty()
+            } finally {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    if (client != null) {
+                        if (ops) {
+                            runCatching { call { c -> c.transact(Op.EOS_BULB_END) } }
+                        } else {
+                            runCatching { call { c -> c.transact(Op.EOS_REMOTE_RELEASE_OFF, intArrayOf(2)) } }
+                            runCatching { call { c -> c.transact(Op.EOS_REMOTE_RELEASE_OFF, intArrayOf(1)) } }
+                        }
+                    }
+                    _bulb.value = Bulb(seconds, 0, error = error, finished = true)
+                }
+            }
+        }
+    }
+
+    /** Ends the bulb exposure now (the shutter closes). */
+    fun stopBulb() {
+        bulbJob?.cancel()
+    }
+
+    fun clearBulb() {
+        if (bulbJob?.isActive != true) _bulb.value = null
+    }
+
+    // ---------- Movie ----------
+
+    /** Movies can be started from here: the camera reports libgphoto2's EVFRecordStatus and takes settings. */
+    val canMovie: Boolean get() = canSetProps && Prop.EVF_RECORD_STATUS in _props.value
+
+    /** Starts (true) or stops recording a movie to the card. Live view must be running; the camera in movie mode. */
+    suspend fun setMovieRecording(on: Boolean) {
+        setProp(Prop.EVF_RECORD_STATUS, if (on) MovieRecord.CARD else MovieRecord.STOP)
     }
 
     suspend fun setProp(prop: Int, value: Long) {

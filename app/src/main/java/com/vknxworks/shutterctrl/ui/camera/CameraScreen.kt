@@ -86,6 +86,8 @@ fun CameraScreen() {
                 is Link.Connected -> ConnectedPanel(l)
                 else -> ConnectPanel(l)
             }
+            // Independent of the Wi-Fi or USB connection: the camera's own Bluetooth remote.
+            BluetoothRemoteGroup()
         }
     }
 }
@@ -256,7 +258,9 @@ private fun ConnectedPanel(link: Link.Connected) {
     }
 
     ExposureRow()
+    MoreSettingsRow()
     ShutterButtons()
+    BulbGroup()
     Group {
         SelfTimerRow()
         GroupRow(

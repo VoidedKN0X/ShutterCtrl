@@ -17,6 +17,7 @@ object Op {
     const val GET_OBJECT_INFO = 0x1008
     const val GET_OBJECT = 0x1009 // also in the Canon app, as the fallback in DS_GetObject
     const val GET_THUMB = 0x100A
+    const val DELETE_OBJECT = 0x100B
     const val SEND_OBJECT_INFO = 0x100C
     const val SEND_OBJECT = 0x100D
     const val GET_PARTIAL_OBJECT = 0x101B
@@ -35,6 +36,13 @@ object Op {
     // Canon EOS, libgphoto2 only (PTP_OC_CANON_EOS_DriveLens). Moves the focus a step while live view runs:
     // parameter 1..3 = near (small, medium, large), 0x8001..0x8003 = far. Offered only when the camera lists it.
     const val EOS_DRIVE_LENS = 0x9155
+
+    // Canon EOS, libgphoto2 only. Each is used only when the camera lists it among its operations.
+    /** PTP_OC_CANON_EOS_DeleteObject (one parameter, the handle): used when the standard DeleteObject isn't listed. */
+    const val EOS_DELETE_OBJECT = 0x9105
+    /** PTP_OC_CANON_EOS_BulbStart / BulbEnd (no parameters): libgphoto2's "bulb" setting; the camera must be on Bulb. */
+    const val EOS_BULB_START = 0x9125
+    const val EOS_BULB_END = 0x9126
 }
 
 object Rc {
@@ -57,6 +65,25 @@ object Prop {
     const val MODEL_ID = 0xD116 // libgphoto2 name; the Canon app uses 0xD116 but its meaning there is not confirmed
     const val EVF_OUTPUT_DEVICE = 0xD1B0
     const val EVF_MODE = 0xD1B1
+
+    // libgphoto2 only (ptp.h PTP_DPC_CANON_EOS_*; value tables from its config.c). Shown only when the camera
+    // reports the property and the values it allows.
+    const val DRIVE_MODE = 0xD106
+    /** PTP_DPC_CANON_EOS_FocusMode: the AF mode (One Shot, AI Servo, AI Focus, Manual). */
+    const val AF_MODE = 0xD108
+    const val WHITE_BALANCE = 0xD109
+    const val PICTURE_STYLE = 0xD110
+    /**
+     * PTP_DPC_CANON_EOS_EVFRecordStatus, libgphoto2's "movierecordtarget": 4 (Card) starts recording a movie
+     * while live view runs, 0 (None) stops it.
+     */
+    const val EVF_RECORD_STATUS = 0xD1B8
+}
+
+/** libgphoto2's EVFRecordStatus values. */
+object MovieRecord {
+    const val STOP = 0L
+    const val CARD = 4L
 }
 
 /** Canon EOS event records inside GetEvent data (libgphoto2 names). */

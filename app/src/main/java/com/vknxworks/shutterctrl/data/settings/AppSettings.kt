@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.vknxworks.shutterctrl.R
+import com.vknxworks.shutterctrl.camera.AutoDownload
 import com.vknxworks.shutterctrl.ptp.Bracketing
 import com.vknxworks.shutterctrl.ptp.FocusStack
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +60,16 @@ data class AppSettings(
     val stackStep: Int = 1,
     val stackDrives: Int = 3,
     val stackTowardFar: Boolean = true,
+    /** Download new photos by themselves while connected. */
+    val autoDownload: AutoDownload = AutoDownload.OFF,
+    /** Bulb timer: how long the shutter stays open, in seconds. */
+    val bulbSeconds: Int = 30,
+    /** Live view aids. */
+    val liveHistogram: Boolean = false,
+    val liveGrid: Boolean = false,
+    /** The camera paired as a Bluetooth remote: its Bluetooth address and name (empty when none). */
+    val bleAddress: String = "",
+    val bleName: String = "",
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -79,6 +90,12 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val stackStep = intPreferencesKey("stack_step")
         val stackDrives = intPreferencesKey("stack_drives")
         val stackTowardFar = booleanPreferencesKey("stack_toward_far")
+        val autoDownload = stringPreferencesKey("auto_download")
+        val bulbSeconds = intPreferencesKey("bulb_seconds")
+        val liveHistogram = booleanPreferencesKey("live_histogram")
+        val liveGrid = booleanPreferencesKey("live_grid")
+        val bleAddress = stringPreferencesKey("ble_address")
+        val bleName = stringPreferencesKey("ble_name")
     }
 
     private val prefs: Flow<Preferences> = context.appDataStore.data.catch { e ->
@@ -106,6 +123,12 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         stackStep = (this[K.stackStep] ?: 1).coerceIn(1, 3),
         stackDrives = (this[K.stackDrives] ?: 3).coerceIn(1, 20),
         stackTowardFar = this[K.stackTowardFar] ?: true,
+        autoDownload = enumOr(this[K.autoDownload], AutoDownload.OFF),
+        bulbSeconds = (this[K.bulbSeconds] ?: 30).takeIf { it in BULB_CHOICES } ?: 30,
+        liveHistogram = this[K.liveHistogram] ?: false,
+        liveGrid = this[K.liveGrid] ?: false,
+        bleAddress = this[K.bleAddress]?.takeIf { BLE_ADDRESS.matches(it) }.orEmpty(),
+        bleName = this[K.bleName].orEmpty(),
     )
 
     /** Saves a change. If the phone's storage fails, the change is dropped instead of closing the app. */
@@ -129,6 +152,12 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 p[K.stackStep] = s.stackStep
                 p[K.stackDrives] = s.stackDrives
                 p[K.stackTowardFar] = s.stackTowardFar
+                p[K.autoDownload] = s.autoDownload.name
+                p[K.bulbSeconds] = s.bulbSeconds
+                p[K.liveHistogram] = s.liveHistogram
+                p[K.liveGrid] = s.liveGrid
+                p[K.bleAddress] = s.bleAddress
+                p[K.bleName] = s.bleName
             }
         } catch (e: IOException) {
             // Nothing to do: the settings stay as they were.
@@ -149,6 +178,12 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         fun newGuid(): String = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
     }
 }
+
+/** Bulb timer choices, in seconds. */
+val BULB_CHOICES = listOf(2, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 480, 600, 900, 1200, 1800)
+
+/** A Bluetooth address as Android writes it (AA:BB:CC:DD:EE:FF). */
+val BLE_ADDRESS = Regex("[0-9A-F]{2}(:[0-9A-F]{2}){5}")
 
 private inline fun <reified E : Enum<E>> enumOr(name: String?, default: E): E =
     name?.let { n -> enumValues<E>().firstOrNull { it.name == n } } ?: default

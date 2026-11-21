@@ -1,7 +1,9 @@
 package com.vknxworks.shutterctrl
 
 import android.content.Context
+import com.vknxworks.shutterctrl.ble.BleRemote
 import com.vknxworks.shutterctrl.camera.CameraSession
+import com.vknxworks.shutterctrl.camera.Downloads
 import com.vknxworks.shutterctrl.camera.IntervalService
 import com.vknxworks.shutterctrl.data.lock.LockVault
 import com.vknxworks.shutterctrl.data.settings.AppSettings
@@ -38,12 +40,22 @@ class AppContainer(val context: Context) {
     /** The one camera connection, over Wi-Fi or USB. */
     val session = CameraSession(context, appScope, network, usb, geotag = { uri, mime -> geo.tag(uri, mime) }).also { usb.start() }
 
+    /** One download at a time, from the Card tab or by themselves while you shoot (auto-download). */
+    val downloads = Downloads(session, appScope)
+
+    /** The camera as a Bluetooth remote (only when you pair or connect it). */
+    val ble = BleRemote(context, appScope)
+
     /** The app lock's PIN and fingerprint key (the shared Ctrl series lock). */
     val vault = LockVault(context, "shutterctrl")
 
     init {
         AppLock.onLocked = { onLocked() }
         appScope.launch { settings.settings.map { it.geotag }.distinctUntilChanged().collect { geo.setEnabled(it) } }
+        // Auto-download: every new photo the camera reports that matches the choice is queued.
+        appScope.launch {
+            session.newObjects.collect { info -> if (settings.settings.value.autoDownload.wants(info)) downloads.enqueue(info) }
+        }
     }
 
     suspend fun enableLock(pin: String) {
@@ -62,6 +74,7 @@ class AppContainer(val context: Context) {
      */
     suspend fun forgetEverything() {
         IntervalService.stop(context)
+        ble.disconnect()
         session.disconnect()
         settings.update { AppSettings() }
         vault.disable()

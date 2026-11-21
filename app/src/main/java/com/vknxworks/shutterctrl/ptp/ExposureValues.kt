@@ -38,6 +38,9 @@ object ExposureValues {
         return "f/" + if (n < 10) "%.1f".format(java.util.Locale.ROOT, n) else n.toInt().toString()
     }
 
+    /** Canon's shutter-speed code for Bulb. */
+    const val BULB_CODE = 0x0CL
+
     /** Shutter speed: code 0x38 is 1 s, every 8 is one stop (Tv = code/8 - 7). 0x0C is Bulb, 0 is Auto. */
     fun shutter(code: Long): String {
         if (code == 0L || code == 0xFFFFFFFFL) return "AUTO"

@@ -13,7 +13,7 @@ import java.io.OutputStream
  * it's complete, and is removed again if the download fails.
  */
 class Saver(private val context: Context) {
-    class Pending(val uri: Uri, val out: OutputStream)
+    class Pending(val uri: Uri, val out: OutputStream, val pfd: android.os.ParcelFileDescriptor? = null)
 
     fun begin(info: ObjectInfo): Pending {
         val resolver = context.contentResolver
@@ -46,12 +46,35 @@ class Saver(private val context: Context) {
     /** Publishes the finished file; [beforePublish] can still change it (geotagging) while it's hidden. */
     fun finish(p: Pending, beforePublish: ((Uri) -> Unit)? = null) {
         p.out.close()
+        p.pfd?.close()
         beforePublish?.let { runCatching { it(p.uri) } }
         context.contentResolver.update(p.uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
     }
 
+    /**
+     * Opens an unfinished download again to continue it: the file is cut back to [offset] bytes (what is known
+     * to be complete) and written on from there. Fails if the file is gone or shorter than that.
+     */
+    fun resume(uri: Uri, offset: Long): Pending {
+        val pfd = context.contentResolver.openFileDescriptor(uri, "rw") ?: throw java.io.IOException("Can't write")
+        try {
+            if (pfd.statSize in 0 until offset) throw java.io.IOException("The unfinished file is shorter than expected")
+            val out = java.io.FileOutputStream(pfd.fileDescriptor)
+            out.channel.truncate(offset)
+            out.channel.position(offset)
+            return Pending(uri, out, pfd)
+        } catch (e: Exception) {
+            runCatching { pfd.close() }
+            throw e
+        }
+    }
+
+    /** Closes an unfinished download without deleting it (it stays hidden), so it can be continued. */
+    fun keep(p: Pending): Boolean = runCatching { p.out.close(); p.pfd?.close() }.isSuccess
+
     fun abort(p: Pending) {
         runCatching { p.out.close() }
+        runCatching { p.pfd?.close() }
         runCatching { context.contentResolver.delete(p.uri, null, null) }
     }
 

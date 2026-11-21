@@ -26,7 +26,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.shutterctrl.R
 import com.vknxworks.shutterctrl.camera.IntervalService
 import com.vknxworks.shutterctrl.container
+import com.vknxworks.shutterctrl.data.settings.BULB_CHOICES
+import com.vknxworks.shutterctrl.ptp.ExposureValues
+import com.vknxworks.shutterctrl.ptp.Prop
 import com.vknxworks.shutterctrl.ui.components.CtrlButton
+import com.vknxworks.shutterctrl.ui.components.CtrlProgressBar
+import com.vknxworks.shutterctrl.ui.components.Group
 import com.vknxworks.shutterctrl.ui.components.CtrlSecondaryButton
 import com.vknxworks.shutterctrl.ui.components.GroupChoice
 import com.vknxworks.shutterctrl.ui.theme.CtrlColors
@@ -49,7 +54,8 @@ fun ShutterButtons(modifier: Modifier = Modifier) {
     val interval by IntervalService.state.collectAsStateWithLifecycle()
     // A bracketing or focus-stacking series has the shutter.
     val series by session.series.collectAsStateWithLifecycle()
-    val seriesBusy = series?.finished == false
+    val bulb by session.bulb.collectAsStateWithLifecycle()
+    val seriesBusy = series?.finished == false || bulb?.finished == false
     var focusing by remember { mutableStateOf(false) }
     var countdown by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -122,4 +128,63 @@ fun SelfTimerRow() {
         settings.selfTimer,
         icon = Icons.Outlined.Timer,
     ) { v -> scope.launch { c.settings.update { it.copy(selfTimer = v) } } }
+}
+
+
+/**
+ * Bulb timer, shown while the camera is set to Bulb: keeps the shutter open for the chosen time, with a countdown
+ * and Stop. Uses Canon's BulbStart/BulbEnd where the camera lists them, otherwise holds the remote release down.
+ */
+@Composable
+fun BulbGroup() {
+    val context = LocalContext.current
+    val c = context.container
+    val session = c.session
+    val scope = rememberCoroutineScope()
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val props by session.props.collectAsStateWithLifecycle()
+    val bulb by session.bulb.collectAsStateWithLifecycle()
+    val series by session.series.collectAsStateWithLifecycle()
+    val interval by IntervalService.state.collectAsStateWithLifecycle()
+    val onBulb = props[Prop.TV] == ExposureValues.BULB_CODE
+    val b = bulb
+    if ((!onBulb && b == null) || !session.canBulb) return
+    Group(stringResource(R.string.bulb_title), footer = stringResource(R.string.bulb_footer)) {
+        GroupChoice(
+            stringResource(R.string.bulb_time),
+            BULB_CHOICES.map { it to durationText(context, it) },
+            settings.bulbSeconds,
+            icon = Icons.Outlined.Timer,
+        ) { v -> scope.launch { c.settings.update { it.copy(bulbSeconds = v) } } }
+        when {
+            b != null && !b.finished -> {
+                CtrlProgressBar(1f - b.left.toFloat() / b.total, Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 6.dp), color = CtrlColors.Accent)
+                CtrlButton(
+                    stringResource(R.string.bulb_stop, durationText(context, b.left)),
+                    onClick = { session.stopBulb() },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 6.dp),
+                )
+            }
+            else -> {
+                if (b?.error != null) Text(stringResource(R.string.bulb_failed, b.error), color = CtrlColors.Error, modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+                CtrlButton(
+                    stringResource(R.string.bulb_start, durationText(context, settings.bulbSeconds)),
+                    onClick = { session.clearBulb(); session.startBulb(settings.bulbSeconds) },
+                    enabled = onBulb && series?.finished != false && !interval.active,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+/** "45 s", "2 min", "2 min 30 s". */
+internal fun durationText(context: android.content.Context, seconds: Int): String {
+    val m = seconds / 60
+    val s = seconds % 60
+    return when {
+        m == 0 -> context.getString(R.string.unit_s, s)
+        s == 0 -> context.getString(R.string.unit_min, m)
+        else -> context.getString(R.string.unit_min_s, m, s)
+    }
 }

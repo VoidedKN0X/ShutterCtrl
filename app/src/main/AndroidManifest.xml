@@ -25,7 +25,16 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Bluetooth remote (Android's "Nearby devices" permission, asked for only when you pair or connect the
+         camera as a remote): find cameras waiting to pair with a remote, and connect to the paired one. The scan
+         is declared as never used to work out where you are, so no location permission is needed for it. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-feature android:name="android.hardware.wifi" android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <!-- Optional: a camera on a USB cable (USB host / OTG). No permission is needed for this; Android asks
          you once per camera when you tap it. -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />

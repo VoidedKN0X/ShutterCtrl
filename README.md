@@ -16,11 +16,20 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 - **Connect over Wi-Fi:** on the camera's own Wi-Fi (no internet) or on your home Wi-Fi. Search the network (SSDP/UPnP), use the camera's access point address, or type its IP address
 - **Connect over USB:** plug the camera into the phone with a cable and tap it. Everything below works the same over the cable (see [USB](#usb))
-- **Card browser** with thumbnails from the camera, newest first
+- **Card browser** with thumbnails from the camera, newest first, with **filters** (JPEG, RAW, taken today)
+- **Batch download:** long-press to select files (or Select all shown) and download them in one go, one after another, with progress
+- **Auto-download while shooting:** new JPEGs, RAWs or all new photos download by themselves while ShutterCtrl is connected (off until you choose)
+- **Resume interrupted downloads:** when the connection drops part-way, what arrived is kept and the next try continues from there (while ShutterCtrl stays open; needs a camera that can send parts of a file)
+- **Delete from the card**, one file or a selection, after you confirm. Copies on the phone stay
 - **Download JPEG and RAW** (CR2, CR3) to **Pictures/ShutterCtrl**, with progress. The file only appears in your library once it's complete. RAW types the phone's media library doesn't know (on many phones CR3) go to **Download/ShutterCtrl** instead
 - **Open in [LumenCtrl](https://github.com/VoidedKN0X/LumenCtrl):** download and edit a JPEG or RAW in one tap, if LumenCtrl is installed
 - **Remote shutter:** Focus (half press, held until you release it) and Shoot, with a 2 or 10 second self-timer
 - **Live view** from the camera, with **Av, Tv, ISO and exposure compensation** chosen from the values the camera allows in its current mode
+- **Live-view aids:** a rule-of-thirds **grid**, a brightness **histogram** and **magnify** (2× or 4× around the point you tap). All worked out on the phone from the live-view picture; nothing extra is sent to the camera
+- **More remote settings:** **white balance, drive mode, AF mode and picture style**, from the values the camera allows, shown when the camera reports them
+- **Movie start and stop** from live view, on cameras that report the movie record setting (set the camera to movie mode first)
+- **Bulb timer:** with the camera on Bulb, keep the shutter open for 2 seconds to 30 minutes, with a countdown and Stop
+- **Bluetooth remote:** pair the camera once as a Bluetooth remote (like Canon's BR-E1) and use Focus and Shoot without turning on the camera's Wi-Fi. **Needs confirming on your device** (see [Bluetooth remote](#bluetooth-remote))
 - **Intervalometer:** N shots every T seconds, also with the screen off. It runs in a foreground service only while a series is active, with a notification and Stop
 - **Exposure bracketing:** 3, 5, 7 or 9 shots at ⅓, ⅔, 1 or 2 stops apart, around the current exposure, with exposure compensation (or with the shutter speed in M mode). Shown only when the camera reports values it accepts; the starting value is put back afterwards
 - **Focus stacking** in live view: a shot, the focus moved a few steps with Canon's DriveLens, the next shot, and so on (5 to 50 shots, small, medium or large steps, towards far or near), without autofocus. Near and Far buttons set the starting point. Shown only on cameras that list DriveLens
@@ -32,9 +41,21 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ### Not in 0.2
 
 - **GPS tagging of RAW files:** Android can't write positions into CR2/CR3 files, so only JPEG photos are geotagged, and only for time ShutterCtrl was open.
-- **Bluetooth pairing, wake-up and the Bluetooth remote:** not included. Turn on the camera's Wi-Fi from the camera's menu, or use a USB cable, instead.
-- **Movies:** the card browser lists photos; videos may show up but aren't the focus of this version.
+- **Waking the camera and switching its Wi-Fi on over Bluetooth:** not included. No public source or open-source project confirms the commands, and ShutterCtrl never sends guessed ones. Turn on the camera's Wi-Fi from the camera's menu, or use a USB cable, for live view and the card. The Bluetooth remote (Focus and Shoot) is included.
+- **Movies in the card browser:** the card browser lists photos; videos may show up but aren't the focus.
 - Canon's cloud services (Canon ID, image.canon, streaming, error-log upload) are left out on purpose.
+
+## Bluetooth remote
+
+ShutterCtrl can be the camera's Bluetooth remote, the way Canon's BR-E1 wireless remote is: **Focus** (held until you let go) and **Shoot**, without Wi-Fi.
+
+**Needs confirming on your device.** It follows two open-source projects that use this protocol: [furble](https://github.com/gkoh/furble) (`CanonEOSRemote`, used with the EOS M6, RP and R6 Mark II) and [eos-remote-web](https://github.com/RReverser/eos-remote-web) (EOS 250D), which builds on Ian Douglas Scott's reverse engineering of the EOS 800D. It hasn't been tried with an EOS R50 yet. Please [report](https://github.com/VoidedKN0X/ShutterCtrl/issues/new/choose) whether it works.
+
+1. On the camera, open the wireless menu and choose pairing with a wireless remote (the BR-E1 pairing).
+2. In ShutterCtrl, **Camera > Bluetooth remote > Pair a camera**. Android asks for the **Nearby devices** permission the first time. Tap your camera in the list; Android may ask you to confirm the pairing.
+3. Next time, tap **Connect to** your camera. **Forget this camera** makes ShutterCtrl forget it (remove it from Android's Bluetooth settings and the camera's menu too if you like).
+
+What is sent, and nothing else: service `00050000-0000-1000-0000-d8492fffa821`; on connecting, `0x03` followed by the name "ShutterCtrl" to `00050002-…`; for the buttons one byte to `00050003-…`: `0x4C` focus down, `0x8C` shutter down, `0x0C` let go. Other values those projects name (a 2-second delay mode, a movie mode, zoom buttons) aren't used, because neither project sends them.
 
 ## USB
 
@@ -165,6 +186,7 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 | Allow Wi-Fi multicast reception | Hearing cameras answer a search. Held only while you tap Search. |
 | Foreground service, and foreground service (connected device) | The intervalometer keeps shooting with the screen off. Only while a series runs. |
 | Notifications | The "Intervalometer running" notification with Stop. |
+| Nearby devices: Bluetooth scan and connect (optional) | Only for the **Bluetooth remote**; Android asks when you first pair or connect. Finding cameras that are waiting to pair with a remote, and connecting to the one you paired. The scan is declared as never used to work out where you are. |
 | Precise and approximate location (optional) | Only for **Settings > Downloads > Add the phone's location**, which is off until you turn it on; Android asks then. While it's on and ShutterCtrl is open, the phone's position is noted (kept on the phone for 24 hours) and written into downloaded JPEGs. Turning it off deletes the notes. Allowing only approximate location works too, less precisely. |
 | Use biometric hardware | Optional fingerprint unlock for the app lock. |
 | Hide other apps' floating windows over the PIN screen | While the lock or PIN screen is showing, other apps' floating windows are hidden over it. |

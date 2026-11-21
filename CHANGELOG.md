@@ -4,6 +4,25 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing in this release had been run on a phone or with a real camera when it was published.
+
+### Added
+
+- **Bluetooth remote (needs confirming on your device).** **Camera > Bluetooth remote** pairs the camera as a Bluetooth remote, the way Canon's BR-E1 wireless remote is paired (start pairing with a wireless remote in the camera's wireless menu, then tap **Pair a camera**), and then offers **Focus** (held until you let go) and **Shoot** without the camera's Wi-Fi. The camera is remembered (**Connect to …**, **Forget this camera**). Only what two open-source projects both send is used: furble's `CanonEOSRemote` (EOS M6, RP, R6 Mark II) and eos-remote-web (EOS 250D): the pairing write `0x03` + name, and the button bytes `0x4C`, `0x8C` and `0x0C`. It hasn't been tried with an EOS R50, so it's marked "Needs confirming on your device". **Not included:** waking the camera and switching its Wi-Fi on over Bluetooth: no public source or open-source project confirms those commands, so ShutterCtrl doesn't send them.
+- **Live-view aids.** Live view has three new chips: a rule-of-thirds **grid**, a brightness **histogram** (with an accent edge when part of the picture is pure black or white) and **magnify** (2× or 4×; tap the picture to choose the point to magnify around). All on the phone, from the live-view picture; nothing extra is sent to the camera. Grid and histogram are remembered.
+- **Movie start and stop.** In live view, **Movie > Start recording / Stop recording** records a movie to the camera's card, on cameras that report the movie record setting (libgphoto2's `movierecordtarget`, property 0xD1B8: 4 = card, 0 = stop). Set the camera to movie mode first. Shown only when the camera reports the setting.
+- **More remote settings.** A second row of tiles under Av, Tv, ISO and EV: **white balance (0xD109), drive mode (0xD106), AF mode (0xD108) and picture style (0xD110)**, chosen from the values the camera allows right now, with libgphoto2's names for the values. A tile appears only when the camera reports that setting.
+- **Bulb timer.** When the camera is on Bulb, **Camera > Bulb timer** keeps the shutter open for 2 seconds to 30 minutes with a countdown and **Stop**. It uses Canon's BulbStart/BulbEnd (0x9125/0x9126, libgphoto2) when the camera lists them, otherwise it holds the remote release fully down and lets go (libgphoto2's "Press Full" and "Release Full"). The shutter is always closed again, also when you stop early or the connection ends. The other shutter buttons wait while a bulb exposure runs.
+- **Card filters, batch download and auto-download.** The Card tab has filters (All, JPEG, RAW, Today). Long-press a thumbnail to select it (tap more to add them, or **Select all shown**), then download the selection or delete it. Downloads now go through one queue, one file at a time, with a progress line ("Downloading · 3 of 12"). **Auto: …** chooses whether new photos download by themselves while ShutterCtrl is connected: off (the default), JPEG, RAW or all photos.
+- **Delete from the card.** One file (**Delete from the card** in its sheet) or a selection, after a confirmation that says copies on the phone stay. Uses the standard PTP DeleteObject (0x100B), or Canon's own (0x9105, libgphoto2) when the camera lists only that. Shown only when the camera lists one of them.
+- **Resume interrupted downloads.** When a download stops part-way (the Wi-Fi or cable dropped), what arrived is kept, hidden from your library, and **Continue download (45 %)** picks up where it stopped, also after reconnecting. It works with cameras that can send parts of a file, and while ShutterCtrl stays open; an unfinished file Android never sees finished is removed by Android after about a week.
+
+### Permissions
+
+- **Nearby devices (Bluetooth scan and connect), new and optional.** Only for the Bluetooth remote; asked for when you first pair or connect. The scan is declared as never used to work out where you are, so no location is involved. The build check's list of allowed permissions now includes these two.
+
 ## v0.4.1 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there. It has also never been tried with a real Canon camera.

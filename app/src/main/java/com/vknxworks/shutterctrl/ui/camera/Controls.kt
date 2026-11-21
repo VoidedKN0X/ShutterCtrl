@@ -46,7 +46,34 @@ private val settingsList = listOf(
  * events; a tile without choices can't be changed in the camera's current mode (or the camera hasn't said).
  */
 @Composable
-fun ExposureRow(modifier: Modifier = Modifier) {
+fun ExposureRow(modifier: Modifier = Modifier) = SettingTiles(settingsList, modifier)
+
+/**
+ * White balance, drive mode, AF mode and picture style, as a second row of tiles, with libgphoto2's names for the
+ * values (Canon's app doesn't name them). A tile is shown only when the camera reports that setting.
+ */
+@Composable
+fun MoreSettingsRow(modifier: Modifier = Modifier) {
+    val c = LocalContext.current.container
+    val props by c.session.props.collectAsStateWithLifecycle()
+    val allowed by c.session.allowed.collectAsStateWithLifecycle()
+    val names = listOf(
+        Triple(Prop.WHITE_BALANCE, R.string.ctl_wb, SettingNames.whiteBalance),
+        Triple(Prop.DRIVE_MODE, R.string.ctl_drive, SettingNames.driveMode),
+        Triple(Prop.AF_MODE, R.string.ctl_af, SettingNames.afMode),
+        Triple(Prop.PICTURE_STYLE, R.string.ctl_style, SettingNames.pictureStyle),
+    ).filter { (prop, _, _) -> prop in props || prop in allowed }
+    if (names.isEmpty()) return
+    val resolved = names.map { (prop, label, table) ->
+        val strings = table.mapValues { (_, res) -> stringResource(res) }
+        val unknown = stringResource(R.string.ctl_value_unknown)
+        Setting(prop, label) { v -> strings[v] ?: unknown.format(v) }
+    }
+    SettingTiles(resolved, modifier)
+}
+
+@Composable
+private fun SettingTiles(settingsList: List<Setting>, modifier: Modifier) {
     val context = LocalContext.current
     val session = context.container.session
     val scope = rememberCoroutineScope()

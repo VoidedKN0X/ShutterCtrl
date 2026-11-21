@@ -126,7 +126,8 @@ jobs:
           # INTERNET (sockets to the camera; the app refuses non-private addresses), ACCESS_NETWORK_STATE (bind
           # sockets to the camera's Wi-Fi), CHANGE_WIFI_MULTICAST_STATE (SSDP discovery), and the intervalometer's
           # foreground service + notification, and location for the opt-in geotagging of downloads (asked for only
-          # when that option is turned on). No Wi-Fi scanning or changing, no Bluetooth.
+          # when that option is turned on), and Bluetooth scan + connect for the camera's Bluetooth remote (asked for
+          # only when you pair or connect it; the scan is declared neverForLocation). No Wi-Fi scanning or changing.
           # Any other permission fails the build.
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
           apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
@@ -136,6 +137,8 @@ jobs:
           android.permission.ACCESS_COARSE_LOCATION
           android.permission.ACCESS_FINE_LOCATION
           android.permission.ACCESS_NETWORK_STATE
+          android.permission.BLUETOOTH_CONNECT
+          android.permission.BLUETOOTH_SCAN
           android.permission.CHANGE_WIFI_MULTICAST_STATE
           android.permission.FOREGROUND_SERVICE
           android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
