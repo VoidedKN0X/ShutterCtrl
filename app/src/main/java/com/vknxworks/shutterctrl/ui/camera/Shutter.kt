@@ -124,7 +124,7 @@ fun SelfTimerRow() {
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     GroupChoice(
         stringResource(R.string.self_timer),
-        listOf(0 to stringResource(R.string.timer_off), 2 to "2 s", 10 to "10 s"),
+        listOf(0 to stringResource(R.string.timer_off), 2 to stringResource(R.string.unit_s, 2), 10 to stringResource(R.string.unit_s, 10)),
         settings.selfTimer,
         icon = Icons.Outlined.Timer,
     ) { v -> scope.launch { c.settings.update { it.copy(selfTimer = v) } } }

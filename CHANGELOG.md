@@ -21,6 +21,8 @@ Built and checked by CI only: nothing in this release had been run on a phone or
 
 - **Settings export and import.** **Settings > Settings file** saves your shooting, intervalometer, bracketing, focus stacking, bulb, live view and auto-download settings and the camera's last address to a JSON file you choose, and imports one again after listing exactly which settings it changes. Never in the file: this phone's PTP/IP pairing identity, the Bluetooth camera, geotagging (it would turn on location), the app lock and the privacy settings. An imported address is used only if it's on a local network.
 
+- **Dutch.** ShutterCtrl now has a complete Dutch (Belgian Dutch, informal "je") translation of every screen, setting and message, including everything above. Android picks it when your phone's language is Dutch; otherwise ShutterCtrl stays in English. There's no language setting in the app. Camera values and technical names (Av, Tv, ISO, JPEG, RAW, USB, AUTO, BULB…) stay as they are, and so do the camera's own error codes shown after a failure.
+
 ### Permissions
 
 - **Nearby devices (Bluetooth scan and connect), new and optional.** Only for the Bluetooth remote; asked for when you first pair or connect. The scan is declared as never used to work out where you are, so no location is involved. The build check's list of allowed permissions now includes these two.

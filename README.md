@@ -37,6 +37,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Firmware transfer:** send a `.FIR` file you downloaded from Canon's website yourself, with safety checks (see [Firmware updates](#firmware-updates))
 - **Settings export and import:** save your shooting, live view and download settings to a file and use them again later or on another phone. No pairing identity, Bluetooth camera, geotagging, app lock or privacy settings are in it
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
+- **English and Dutch:** ShutterCtrl follows your phone's language (Dutch when your phone is set to Dutch, English otherwise); there's no language setting in the app
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
 
 ### Not in 0.2
