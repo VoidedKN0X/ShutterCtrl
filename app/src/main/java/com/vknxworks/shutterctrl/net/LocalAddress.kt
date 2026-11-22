@@ -6,14 +6,11 @@ import java.net.InetAddress
 
 /**
  * ShutterCtrl only talks to cameras on the local network: private and link-local addresses.
- * Everything else is refused before a socket is opened.
+ * Everything else (this phone's own 127.0.0.1 included) is refused before a socket is opened.
  */
 object LocalAddress {
-    /** Set only in debug builds, for tests against a simulated camera through `adb reverse`. */
-    @Volatile var allowLoopback = false
-
     fun isAllowed(a: InetAddress): Boolean {
-        if (a.isLoopbackAddress) return allowLoopback
+        if (a.isLoopbackAddress) return false
         val b = a.address
         return when (a) {
             is Inet4Address -> {

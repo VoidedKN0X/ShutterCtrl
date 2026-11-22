@@ -4,6 +4,14 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Removed
+
+- **127.0.0.1 is refused in every build.** Builds made on a computer (never the release you install) also accepted the phone's own address 127.0.0.1, to test against a pretend camera through a USB cable. That exception is gone: every build now only connects to cameras on the local network (private and link-local addresses), exactly as the release always did. A 127.0.0.1 in a settings file is ignored when it is read, as it always was in the release.
+- **Log lines are stripped from the release build.** The release build already removed debug, verbose and info log lines; it now also removes warning, error and other log lines, so anything a library writes to Android's log, or a log line that sneaks in later, doesn't end up in the app you install. ShutterCtrl's own code doesn't log at all.
+- Nothing else changes.
+
 ## v0.6.1 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

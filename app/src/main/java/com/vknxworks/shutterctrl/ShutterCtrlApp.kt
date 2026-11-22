@@ -12,8 +12,6 @@ class ShutterCtrlApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Debug builds only: 127.0.0.1 for testing against a simulated camera over `adb reverse`.
-        com.vknxworks.shutterctrl.net.LocalAddress.allowLoopback = BuildConfig.DEBUG
         container = AppContainer(this)
         // The app lock: locks after the chosen time away ("Lock again").
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {

@@ -220,8 +220,7 @@ class CameraSession(
     }
 
     private fun openIp(addr: InetAddress, guid: ByteArray, name: String): Pair<PtpTransport, DeviceInfo> {
-        val factory = if (addr.isLoopbackAddress) javax.net.SocketFactory.getDefault() else network.socketFactory()
-        val c = PtpIpClient(factory, addr, guid, name)
+        val c = PtpIpClient(network.socketFactory(), addr, guid, name)
         try {
             c.connect()
         } catch (e: Exception) {
