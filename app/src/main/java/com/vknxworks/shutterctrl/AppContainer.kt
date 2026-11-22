@@ -2,6 +2,7 @@ package com.vknxworks.shutterctrl
 
 import android.content.Context
 import com.vknxworks.shutterctrl.ble.BleRemote
+import com.vknxworks.shutterctrl.camera.AutoDownload
 import com.vknxworks.shutterctrl.camera.CameraSession
 import com.vknxworks.shutterctrl.camera.Downloads
 import com.vknxworks.shutterctrl.camera.IntervalService
@@ -52,6 +53,8 @@ class AppContainer(val context: Context) {
     init {
         AppLock.onLocked = { onLocked() }
         appScope.launch { settings.settings.map { it.geotag }.distinctUntilChanged().collect { geo.setEnabled(it) } }
+        // With auto-download on, new photos are picked up as quickly in the background as in front.
+        session.wantsQuickEvents = { settings.settings.value.autoDownload != AutoDownload.OFF }
         // Auto-download: every new photo the camera reports that matches the choice is queued.
         appScope.launch {
             session.newObjects.collect { info -> if (settings.settings.value.autoDownload.wants(info)) downloads.enqueue(info) }

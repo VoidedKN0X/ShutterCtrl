@@ -18,11 +18,14 @@ class ShutterCtrlApp : Application() {
             override fun onStart(owner: LifecycleOwner) {
                 AppLock.onForeground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
                 container.geo.setForeground(true)
+                container.session.setBackground(false)
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 AppLock.onBackground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
                 container.geo.setForeground(false)
+                // Polls the camera less often while nothing in the background needs it (see PollTiming).
+                container.session.setBackground(true)
             }
         })
     }

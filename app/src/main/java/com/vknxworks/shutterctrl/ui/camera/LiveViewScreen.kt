@@ -69,6 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.shutterctrl.R
 import com.vknxworks.shutterctrl.camera.Link
@@ -91,11 +92,21 @@ fun LiveViewScreen() {
     val frame by session.liveFrame.collectAsStateWithLifecycle()
 
     DisposableEffect(Unit) {
-        session.startLiveView()
         onDispose {
             // Focus stacking needs live view: leaving it stops a running stack.
             if (session.series.value?.kind == com.vknxworks.shutterctrl.camera.CameraSession.Series.Kind.FOCUS_STACK) session.stopSeries()
             c.appScope.launch { session.stopLiveView() }
+        }
+    }
+    // Live view runs only while ShutterCtrl is on screen: Home or the screen turning off stops fetching frames
+    // (battery of the phone and the camera), and it starts again on return. A focus stack running in the
+    // background keeps its live view. Start and stop both go through appScope, so they keep their order.
+    LifecycleStartEffect(Unit) {
+        c.appScope.launch { session.startLiveView() }
+        onStopOrDispose {
+            if (session.series.value?.kind != com.vknxworks.shutterctrl.camera.CameraSession.Series.Kind.FOCUS_STACK) {
+                c.appScope.launch { session.stopLiveView() }
+            }
         }
     }
     val view = LocalView.current

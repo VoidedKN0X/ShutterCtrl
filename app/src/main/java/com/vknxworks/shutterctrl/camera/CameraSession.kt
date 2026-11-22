@@ -329,12 +329,31 @@ class CameraSession(
 
     // ---------- Events ----------
 
+    /** ShutterCtrl is in the background (set by ShutterCtrlApp's process lifecycle observer). */
+    @Volatile
+    private var inBackground = false
+
+    /** Something that needs new shots picked up quickly also in the background (auto-download on). */
+    @Volatile
+    var wantsQuickEvents: () -> Boolean = { false }
+
+    fun setBackground(background: Boolean) {
+        inBackground = background
+    }
+
     private fun startPolling() {
         pollJob?.cancel()
         pollJob = scope.launch {
             while (isActive && client != null) {
                 if (!exclusive) runCatching { pollOnce() }
-                delay(if (liveJob != null) 1000 else 500)
+                delay(
+                    PollTiming.delayMs(
+                        background = inBackground,
+                        liveView = liveJob != null,
+                        busy = seriesJob?.isActive == true || bulbJob?.isActive == true || IntervalService.state.value.active,
+                        quickEvents = wantsQuickEvents(),
+                    ),
+                )
             }
         }
     }
@@ -695,6 +714,7 @@ class CameraSession(
     fun startLiveView() {
         if (liveJob != null || !canLiveView) return
         liveJob = scope.launch {
+            val me = coroutineContext[Job]
             try {
                 // EVF output device 2 = the computer (here: the phone), as libgphoto2 and the Canon app set it.
                 setProp(Prop.EVF_OUTPUT_DEVICE, 2)
@@ -713,6 +733,13 @@ class CameraSession(
                     }
                 }
             } catch (_: Exception) {
+            } finally {
+                // Ended by itself (the camera stayed busy, or an error): clear it, so live view can start again.
+                // A stopLiveView() has already cleared liveJob, so this does nothing then.
+                if (liveJob === me) {
+                    liveJob = null
+                    _liveFrame.value = null
+                }
             }
         }
     }

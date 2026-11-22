@@ -5,7 +5,10 @@
     <string name="app_lock_subtitle">Demander un code (et, si vous le voulez, votre empreinte) à l\'ouverture de ShutterCtrl. Une série d\'intervallomètre en cours continue.</string>
     <string name="app_lock_footer">ShutterCtrl ne communique qu\'avec votre appareil photo, par câble USB ou sur le réseau local : pas de cloud, pas de compte, pas de statistiques, pas d\'accès à la position. Les photos téléchargées vont directement dans la galerie de ce téléphone.</string>
     <string name="lock_prompt_subtitle">Votre appareil photo</string>
-    <string name="lock_forgot_body">Le code ne peut pas être récupéré. ShutterCtrl va se déconnecter, réinitialiser ses paramètres (votre appareil photo demandera à nouveau d\'associer ce téléphone) et désactiver le verrouillage. Les photos téléchargées sont dans votre galerie et ne sont pas touchées.</string>
+    <string name="lock_forgot_body">Le code ne peut pas être récupéré. ShutterCtrl va se déconnecter, réinitialiser ses paramètres (votre appareil photo demandera à nouveau d\'associer ce téléphone) et désactiver le verrouillage. Les photos téléchargées sont dans votre galerie et ne sont pas touchées. Si votre téléphone a un verrouillage d\'écran, vous confirmerez d\'abord avec celui-ci.</string>
+    <string name="lock_reset_prompt_title">Réinitialiser le verrouillage de ShutterCtrl</string>
+    <string name="lock_reset_prompt_subtitle">Utilisez le verrouillage d\'écran de votre téléphone pour confirmer que c\'est bien vous</string>
+    <string name="lock_reset_prompt_failed">Impossible d\'afficher le verrouillage d\'écran</string>
 
     <!-- Tabs -->
     <string name="tab_camera">Appareil</string>

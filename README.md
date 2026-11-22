@@ -24,7 +24,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Download JPEG and RAW** (CR2, CR3) to **Pictures/ShutterCtrl**, with progress. The file only appears in your library once it's complete. RAW types the phone's media library doesn't know (on many phones CR3) go to **Download/ShutterCtrl** instead
 - **Open in [LumenCtrl](https://github.com/VoidedKN0X/LumenCtrl):** download and edit a JPEG or RAW in one tap, if LumenCtrl is installed
 - **Remote shutter:** Focus (half press, held until you release it) and Shoot, with a 2 or 10 second self-timer
-- **Live view** from the camera, with **Av, Tv, ISO and exposure compensation** chosen from the values the camera allows in its current mode
+- **Live view** from the camera, with **Av, Tv, ISO and exposure compensation** chosen from the values the camera allows in its current mode. It pauses while ShutterCtrl is in the background (except during a focus stack) and starts again when you come back
 - **Live-view aids:** a rule-of-thirds **grid**, a brightness **histogram** and **magnify** (2× or 4× around the point you tap). All worked out on the phone from the live-view picture; nothing extra is sent to the camera
 - **More remote settings:** **white balance, drive mode, AF mode and picture style**, from the values the camera allows, shown when the camera reports them
 - **Movie start and stop** from live view, on cameras that report the movie record setting (set the camera to movie mode first)
@@ -127,7 +127,7 @@ Each Canon code was checked in Canon Camera Connect's own PTP library (`libEDSDK
 
 - The standard operations `GetDeviceInfo 0x1001`, `OpenSession 0x1002`, `CloseSession 0x1003`, `GetStorageIDs 0x1004`, `GetObjectHandles 0x1007`, `GetObjectInfo 0x1008`, `GetThumb 0x100A`, `SendObjectInfo 0x100C`, `SendObject 0x100D` and `GetPartialObject 0x101B` (standard PTP; Canon's app uses its own variants `0x9101`, `0x9103`, `0x9104`, `0x910A` instead, and `0x1009 GetObject` as a fallback, which is in its code).
 - The **button values** for RemoteReleaseOn/Off: 1 = half press, 2 = full press, second parameter 0 = with autofocus, 1 = without (bracketing after the first shot, and focus stacking). Canon's code passes values it gets from elsewhere, so these come from libgphoto2.
-- ** x9155 DriveLens** (focus stacking): one parameter,  x0001– x0003 = near (small, medium, large step),  x8001– x8003 = far; it works only while live view runs. From libgphoto2 (`PTP_OC_CANON_EOS_DriveLens`, its `manualfocusdrive` setting); ShutterCtrl offers focus stacking only when the camera lists  x9155 among its operations.
+- **0x9155 DriveLens** (focus stacking): one parameter, 0x0001–0x0003 = near (small, medium, large step), 0x8001–0x8003 = far; it works only while live view runs. From libgphoto2 (`PTP_OC_CANON_EOS_DriveLens`, its `manualfocusdrive` setting); ShutterCtrl offers focus stacking only when the camera lists 0x9155 among its operations.
 - The **value encodings**: Canon's Av/Tv/ISO/exposure codes, the battery values (0 low, 1 half, 2 full, 4 three quarters, 5 a quarter) and the GetEvent record layout (`0xC189` property changed, `0xC18A` allowed values, `0xC181`/`0xC1A7` new picture) follow libgphoto2.
 - **`0xD116` as the model id**, and the `.FIR` header's first 4 bytes as the model id.
 - The GetViewFinderData parameters `0x00200000, 0, 0` (Canon's code uses 3 parameters; the values follow libgphoto2).
@@ -208,7 +208,7 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - **Unlock with fingerprint** (optional) only accepts strong biometrics, checked by the phone's secure hardware. The PIN is still needed after the phone restarts and at least every 72 hours.
 - **The PIN is never stored.** It's stretched with 600,000 rounds of PBKDF2 and mixed with a key held in the phone's secure hardware.
 - **Wrong PINs:** after 5 tries you wait 30 seconds, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't skip the wait.
-- **Forgot your PIN?** It can't be recovered. The lock screen offers to reset ShutterCtrl's settings and turn the lock off. Your camera will ask to pair this phone again. Photos you downloaded aren't touched.
+- **Forgot your PIN?** It can't be recovered. The lock screen offers to reset ShutterCtrl's settings and turn the lock off, after you confirm with your phone's own screen lock (PIN, pattern, password or fingerprint) if it has one, so someone holding your unlocked phone can't simply reset it. Your camera will ask to pair this phone again. Photos you downloaded aren't touched.
 - A running intervalometer series or firmware transfer keeps going when the app locks.
 
 ## Privacy

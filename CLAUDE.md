@@ -32,7 +32,7 @@ Canon camera remote in the VKNXWorks Ctrl series (replaces Canon Camera Connect 
 - `geo/LocationLogFile` is the only reader and writer and is only called on `LocationLogger`'s own thread: never touch the file or the data key on the main thread. It reads both sealed and ordinary logs; an ordinary one becomes sealed only through `SealedFile.sealInPlace`. Without a usable data key the log is read and written as an ordinary file.
 - The log is a 24-hour working file, so it gets the simple treatment: a sealed log that can't be opened is deleted and a new one starts (no UI). Never replace an existing `data.key` and never create a Keystore key on the decrypt path (`KeystoreAes.existing`).
 - Not encrypted, on purpose: the settings DataStore (`last_host`, the PTP/IP `guid`, toggles), which the connection code reads; the app lock's own `app_lock_vault` preferences are already protected and must not be touched. Downloads are in the shared media library.
-- `SealedFileTest` and `LocationLogFileTest` cover the format, the migration step, the key rules and the log file (`./gradlew :app:testDebugUnitTest`; CI only runs `assembleRelease`, so run them locally).
+- `SealedFileTest` and `LocationLogFileTest` cover the format, the migration step, the key rules and the log file (`./gradlew :app:testDebugUnitTest`; CI runs the unit tests on every build).
 
 ## Build toolchain
 

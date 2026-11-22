@@ -4,6 +4,28 @@ What changed in each ShutterCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone or a camera yet.
+
+### Fixed
+
+- **Live view stops when you leave ShutterCtrl.** With the live view screen open, pressing Home or turning the screen off kept ShutterCtrl fetching viewfinder pictures from the camera about 15 times a second over Wi-Fi or USB, draining both batteries and keeping the camera's viewfinder output on the phone. Live view now pauses as soon as ShutterCtrl is in the background and starts again when you come back. A focus stack that is running keeps its live view, because it needs it; leaving the live view screen still stops a stack, as before.
+- **Live view can start again after the camera was busy for a long time.** When the camera didn't send a picture for a long while (about 100 tries in a row), live view gave up but ShutterCtrl still thought it was running: the screen kept the last frozen picture and live view couldn't be started again until you left the screen. It now clears itself, so going back to live view (or retrying) works.
+
+### Changed
+
+- **Fewer checks with the camera while ShutterCtrl is in the background.** While connected, ShutterCtrl asks the camera for news (new photos, changed settings) twice a second. In the background it now asks every 2 seconds instead, so a new shot can show up to 2 seconds later when you come back. While an intervalometer, bracket, focus stack or bulb exposure is running, or auto-download is on, it keeps asking twice a second, so nothing is picked up later.
+
+### Security
+
+- **"Forgot PIN?" now asks for your phone's screen lock first.** Before, anyone holding your unlocked phone could tap "Forgot PIN?" on ShutterCtrl's lock screen and reset it. Now the reset first asks for your phone's own PIN, pattern, password or fingerprint. If you cancel or it fails, nothing is reset. If your phone has no screen lock at all, the reset works as before.
+
+### Project
+
+- CI now runs the unit tests on every build (`:app:testDebugUnitTest`), with a new test for the polling rates.
+- README: the DriveLens operation codes (0x9155, 0x0001–0x0003, 0x8001–0x8003) had broken characters in place of the leading 0; fixed.
+
 ## v0.6.2 (2026-11-22)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

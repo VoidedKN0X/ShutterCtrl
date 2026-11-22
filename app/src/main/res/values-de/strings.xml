@@ -5,7 +5,10 @@
     <string name="app_lock_subtitle">Beim Öffnen von ShutterCtrl nach einer App-PIN (und auf Wunsch deinem Fingerabdruck) fragen. Eine laufende Intervallserie läuft weiter.</string>
     <string name="app_lock_footer">ShutterCtrl spricht nur mit deiner Kamera, per USB-Kabel oder im lokalen Netzwerk: keine Cloud, kein Konto, keine Analysen und kein Standortzugriff. Heruntergeladene Fotos landen direkt in deiner Mediathek auf diesem Smartphone.</string>
     <string name="lock_prompt_subtitle">Deine Kamera</string>
-    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. ShutterCtrl trennt die Verbindung, setzt seine Einstellungen zurück (deine Kamera fragt erneut, ob sie dieses Smartphone koppeln soll) und schaltet die App-Sperre aus. Heruntergeladene Fotos sind in deiner Mediathek und bleiben unberührt.</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. ShutterCtrl trennt die Verbindung, setzt seine Einstellungen zurück (deine Kamera fragt erneut, ob sie dieses Smartphone koppeln soll) und schaltet die App-Sperre aus. Heruntergeladene Fotos sind in deiner Mediathek und bleiben unberührt. Wenn dein Smartphone eine Displaysperre hat, bestätigst du zuerst damit.</string>
+    <string name="lock_reset_prompt_title">App-Sperre von ShutterCtrl zurücksetzen</string>
+    <string name="lock_reset_prompt_subtitle">Bestätige mit der Displaysperre deines Smartphones, dass du es bist</string>
+    <string name="lock_reset_prompt_failed">Die Displaysperre konnte nicht angezeigt werden</string>
 
     <!-- Tabs -->
     <string name="tab_camera">Kamera</string>
